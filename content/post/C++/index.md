@@ -7,6 +7,11 @@ lastmod:	2023-08-31
 author:		shaopu
 draft: 		false
 type: 		book
+markup:
+  tableOfContents:
+    endLevel: 6
+    ordered: false
+    startLevel: 1
 image:		  
   focal_point: ''
   placement: 2
