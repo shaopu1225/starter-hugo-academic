@@ -1,7 +1,7 @@
 ---
 title:		CS 61C
 subtitle:	CS 61C
-summary:	notes of 61C: Great Ideas in Computer Architecture (Machine Structures)
+summary:	notes of 61C Great Ideas in Computer Architecture (Machine Structures)
 date:		2021-12-05
 lastmod:	2023-08-31
 author:		shaopu

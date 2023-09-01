@@ -1,7 +1,7 @@
 ---
 title:		CS 15418
 subtitle:	CS 15418
-summary:	notes of 15148: Parallel Computer Architecture and Programming
+summary:	notes of 15148 Parallel Computer Architecture and Programming
 date:		2023-03-15
 lastmod:	2023-08-31
 author:		shaopu

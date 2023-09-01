@@ -1,7 +1,7 @@
 ---
 title:		CS 106x & UIUC CS 225
 subtitle:	CS 106x & UIUC CS 225
-summary:	notes of CS 106x & UIUC CS 225: Data Structures and Algorithms
+summary:	notes of CS 106x & UIUC CS 225 Data Structures and Algorithms
 date:		2021-09-05
 lastmod:	2023-08-31
 author:		shaopu

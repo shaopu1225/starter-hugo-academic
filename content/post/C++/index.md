@@ -1,7 +1,7 @@
 ---
 title:		CS 106L
 subtitle:	CS 106L
-summary:	notes of 106L: Standard C++ Programming
+summary:	notes of 106L Standard C++ Programming
 date:		2021-11-07
 lastmod:	2023-08-31
 author:		shaopu

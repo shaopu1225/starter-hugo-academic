@@ -1,7 +1,7 @@
 ---
 title:		CS 61A
 subtitle:	CS 61A
-summary:	notes of CS 61A: Structure and Interpretation of Computer Programs
+summary:	notes of CS 61A Structure and Interpretation of Computer Programs
 date:		2021-07-04
 lastmod:	2023-08-31
 author:		shaopu
