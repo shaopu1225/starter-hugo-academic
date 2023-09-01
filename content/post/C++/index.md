@@ -6,10 +6,7 @@ date:		2021-11-07
 lastmod:	2023-08-31
 author:		shaopu
 draft: 		false
-image:		  
-  focal_point: ''
-  placement: 2
-  preview_only: true
+
 type:		book
 tags:
     - course
