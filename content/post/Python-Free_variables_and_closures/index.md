@@ -20,6 +20,8 @@ categories:
 
 # 由lambda引发的自由变量与闭包讨论
 
+{{< toc >}}
+
 在上次学完lambda之后，我偶然在[一篇博客](https://www.cnblogs.com/xiangnan/p/3900285.html)中看到了如下的示例：
 
 ```python

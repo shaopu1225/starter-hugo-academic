@@ -18,6 +18,8 @@ categories:
     - Programming Language
 ---
 
+{{< toc >}}
+
 ## 匿名函数lambda用法总结
 
 既然lambda被称为匿名函数，那么我们只需要把握一点，即我们可以用
