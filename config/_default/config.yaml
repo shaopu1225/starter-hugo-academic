@@ -29,7 +29,11 @@ module:
 ############################
 ## ADVANCED
 ############################
-tableOfContents: true
+markup:
+  tableOfContents:
+    endLevel: 5
+    ordered: false
+    startLevel: 1
 enableGitInfo: false
 summaryLength: 30
 paginate: 10
