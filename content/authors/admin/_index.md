@@ -78,5 +78,5 @@ email: 'shaopu@berkeley.edu'
 highlight_name: true
 ---
 
-Shaopu Song is a EECS master student at UC Berkeley. His research interests include distributed Distributed Systems, Database Systems and Operating Systems. He is also developing projects in the Artificial intelligence field. He gets a bachelor degree from Southeast University in 2021, majoring in Automation, focusing on building Artificial Intelligence and Robotics. 
+Shaopu Song is a EECS master student at UC Berkeley. His research interests include Distributed Systems, Database Systems and Operating Systems. He is also developing projects in the Artificial intelligence field. He gets a bachelor degree from Southeast University in 2021, majoring in Automation, focusing on building Artificial Intelligence and Robotics. 
 {style="text-align: justify;"}
