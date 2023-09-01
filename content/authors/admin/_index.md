@@ -37,7 +37,7 @@ education:
     - course: Master of Engineering in EECS
       institution: University of California, Berkeley
       year: 2023
-    - course: Bachelor of Engineer in Robotics
+    - course: Bachelor of Engineering in Robotics
       institution: Southeast University, Nanjing
       year: 2021
 
