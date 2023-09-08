@@ -21,7 +21,7 @@ categories:
 
 The procedure of Federated Learning can be descripted using the following figure:
 
-<img src="https://img2022.cnblogs.com/blog/2842354/202204/2842354-20220420121840485-1765157162.png" alt="img" style="zoom:80%;" />
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-08-042349.png" alt="img" style="zoom:80%;" />
 
 Federated learning can be divided into horizontal federated learning, vertical federated learning and federated transfer learning according to the distribution of data.
 
