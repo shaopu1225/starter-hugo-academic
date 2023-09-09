@@ -3899,12 +3899,28 @@ p.reset(new int(3));
 
 #### unique_ptr
 
-与`shared_ptr`所不同的是，`unique_ptr`只允许一个该类型指针指向某个对象。正因为此，其**不支持普通的拷贝或者赋值操作，我们只能将其直接初始化**。
+与`shared_ptr`所不同的是，`unique_ptr`只允许一个该类型指针指向某个对象。正因为此，其**不支持普通的拷贝或者赋值操作，我们只能将其直接初始化**:
+
+```cpp
+unique_ptr<int> pInt(new int(5));	// 显然这里用的是move语义
+cout << *pInt;
+unique_ptr<int> pInt2(pInt);    // error
+unique_ptr<int> pInt3 = pInt;   // error
+
+// OR
+auto ptr = std::make_unique<int>(...);
+```
 
 但我们可以使用`reset`或者`release`操作转移指针控制权：
 
 ```c++
 unique_ptr<string> p2(p1.release());
+```
+
+或者使用移动构造函数：
+
+```cpp
+unique_ptr<int> pInt3(std::move(pInt2));
 ```
 
 `release`返回当前的`unique_ptr`保存的指针并将其置空，并将`p1`的控制权转移给`p2`.
