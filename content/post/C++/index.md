@@ -2077,6 +2077,10 @@ private:
 
 ### friend
 
+类的友元函数是定义在类外部，但有权访问类的所有私有（private）成员和保护（protected）成员。尽管友元函数的原型有在类的定义中出现过，但是友元函数并不是成员函数。
+
+友元可以是一个函数，该函数被称为友元函数；友元也可以是一个类，该类被称为友元类，在这种情况下，整个类及其所有成员都是友元。
+
 **相同class的各个objects互为友元**：
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/202111181413064.png" alt="img" style="zoom:50%;" />
@@ -3416,7 +3420,7 @@ double print_total(const Quote &item) {
 
 <img src='https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/202110312240802.png' alt='IMG_0220' style='zoom:50%'/>
 
-指针`var1`的静态类型为`Snow`，但是动态类型为`Sleet`（内存中的对象类型），这也是为什么对于表达式`var1->method2`，编译时检查`Snow`中是否有`method2`，运行时检查`Sleet`中是否有`method2`的原因。
+**指针`var1`的静态类型为`Snow`，但是动态类型为`Sleet`（内存中的对象类型）**，这也是为什么对于表达式`var1->method2`，编译时检查`Snow`中是否有`method2`，运行时检查`Sleet`中是否有`method2`的原因。
 
 > 对于对象（即非引用或者指针）来说，是不存在什么类型转换与动态类型的。
 
