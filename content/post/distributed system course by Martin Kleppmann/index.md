@@ -566,3 +566,32 @@ Break down into two layers:
 1. Make best-effort broadcast reliable by retransmitting dropped messages
 2. Enforce delivery order on top of reliable broadcast
 
+First attempt: **broadcasting node sends message directly** to every other node
+
+- Use reliable links (retry + deduplicate)
+- Problem: node crash before all messages delivered
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-30-061939.png" alt="image-20230929231938553" style="zoom:33%;" />
+
+#### Eager reliable broadcast
+
+Idea: the **first time** a node receives a particular message, it **re-broadcasts** to each other node (via reliable links).
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-30-062347.png" alt="image-20230929232346896" style="zoom:50%;" />
+
+Reliable, but up to $O(n^2)$ messages for n nodes!
+
+**Gossip protocols**:
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-30-062610.png" alt="image-20230929232609341" style="zoom:50%;" />
+
+#### FIFO/causal/total order broadcast algorithm
+
+| FIFO                                                         | Causal                                                       | total order                                                  |
+| ------------------------------------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
+| <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-30-062838.png" alt="image-20230929232837595" style="zoom:33%;" /> | <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-30-063619.png" alt="image-20230929233618971" style="zoom:33%;" /> | <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-30-063632.png" alt="image-20230929233632307" style="zoom:33%;" /> |
+
+
+
+## Replication
+
