@@ -152,7 +152,7 @@ Each node executes a specified algorithm, assuming one of the following:
 
   A node is faulty if it crashes (at any moment). 
 
-  After crashing, it sopts executing forever.
+  After crashing, it stops executing forever.
 
 - **Crash-recovery** (fail-recovery)
 
@@ -162,7 +162,7 @@ Each node executes a specified algorithm, assuming one of the following:
 
 - **Byzantine** (fail-arbitrary)
 
-  A node is faulty if it dviates from the algorithm.
+  A node is faulty if it deviates from the algorithm.
 
   Faulty nodes may do anything, including crashing or malicous behavior.
 
@@ -226,7 +226,7 @@ contract specifying some SLO, penalties for violation
 
 #### Achieving high availability: fault tolerance
 
-**Failure**: system as a while isn;t working
+**Failure**: system as a while isn't working
 
 **Fault**: some part of the system isn't working
 
@@ -245,7 +245,7 @@ We want to design a system without **SPOF**.
 
 #### Failure detectors
 
-**Falure detector**:
+**Failure detector**:
 
 algorithm that detects whether another node is faulty
 
@@ -729,4 +729,126 @@ Since the client now knows that the update $(t1, v1)$ needs to be propagated to 
 Databases use this model of replication are often called *Dynamo-style*, after Amazon's Dynamo database, which popularized it.
 
 ### State machine replicaiton
+
+Total order broadcast: every node delivers the **same messages** in the **same order**.
+
+**State machine replication** (SMR):
+
+- FIFO-total order broadcast every update to all replicas
+- Replica delivers update message: apply it to own state
+- Applying an update is deterministic
+- Replica is a **state machine**: starts in fixed initial state, goes through same sequence of state transaitions in the same order $\Rightarrow$ all replicas end up in the same state.
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-01-011623.png" alt="image-20230930181623259" style="zoom:50%;" />
+
+Closely related ideas:
+
+- Serializable transactions (execute in delivery order)
+- Blockchains, distributed ledgers, smart contracts
+
+Limitations:
+
+- Cannot update state immediately, have to wait for delivery through broadcast (wait for the coordination between replicas)
+- Need fault-toleratn total order broadcast
+
+#### Database leader replica
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-01-052037.png" alt="image-20230930222037451" style="zoom:50%;" />
+
+Read-only transactions can execute on followers, transactions that modify data must execute on leader first. 
+
+#### Replication using casusal (and weaker) broadcast
+
+State machine replication uses (FIFO-) total order broadcast. Can we use weaker forms of broadcast too?
+
+If replica state updates are **commutative**, replicas can process updates in different orders and still end up in the same state.
+
+Updates $f$ and $g$ are commutative if $f(g(x))=g(f(x))$.
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-01-053519.png" alt="image-20230930223518615" style="zoom:50%;" />
+
+## Consensus
+
+**Fault-tolerant total order broadcast**
+
+Total order broadcast is very useful for state machine replication. 
+
+Can implement total order broadcast by sending all messages via a single **leader**.
+
+Problem: what if leader crashes/becomes unavailable?
+
+- **Manual failover**: a human operator chooses a new leader, and reconfigures each node to use new leader
+
+  Used in many databases! Fine for planned maintaienance.
+
+  Unplanned outage? Humans are slow, may take a long time until system recovers...
+
+- Can we **automatically choose a new leader**?
+
+**Consensus and total order broadcast**
+
+- Traditional formulation of consensus: several nodes want to come to **agreement** about a single **value**
+- In context to total order broadcast: this value is the **next message to deliver**
+- Once one node **decides** on a certain message order, all nodes will decide the same order
+- Consensus and total order broadcast are formually equivalent
+
+Common consensus algorithms:
+
+- **Paxos**: single-value consensus
+
+  **Multi-Paxos**: generalization to total order broadcast
+
+- **Raft, Viewstanped Replication, Zab**: total order broadcast by default 
+
+### Consensus system models
+
+Paxos, Raft, etc. assume a **partially synchronous, crash-recovery** system model.
+
+Why not asynchronous?
+
+- **FLP result** (Fischer, Lynch, Paterson, impossibility proven)
+
+  There is no deterministic consensus algorithm that is guaranteed to terminate in an synchronous crash- stop system model.
+
+- Paxos, Raft, etc. use clocks only used for timeouts/failure detector to ensure progress. Safety (correctness) does ot depend on timing.
+
+There are also consensus algorithms for a partially syncronous **Byzantine** system model (used in blockchains).
+
+#### Leader election
+
+Multi-Paxos, raft, etc. use a leader to sequence messages.
+
+- Use a **failure detector** (timeout) to determine suspected crash or unavailaility of leader.
+- On suspected leader crash, **elect a new one**.
+- Prevent **two leaders at the same time** ("split-brain")
+
+Ensure $\le 1$ leader per **term**:
+
+- Term is incremented every time a leader election is started
+- A node can only **vote once** per term
+- Require a **quorum** of nodes to elect a leader in a term
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-01-062112.png" alt="image-20230930232111707" style="zoom:50%;" />
+
+**Can we guarantee there is only one leader?**
+
+Can guarantee unique leader **per term**.
+
+**Cannot** prevent having multiple leaderts from different terms.
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-01-062550.png" alt="image-20230930232549918" style="zoom:50%;" />
+
+**checking if a leader has been voted out**
+
+For every decision (message to deliver), the leader must first get acknowledgement from a quorum.
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-01-062849.png" alt="image-20230930232849297" style="zoom:50%;" />
+
+### Raft
+
+This part is omitted since I have already implemented raft algorithm in **MIT 6.824**.
+
+
+
+
 
