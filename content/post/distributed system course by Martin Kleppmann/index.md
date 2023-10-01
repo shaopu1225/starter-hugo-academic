@@ -595,3 +595,138 @@ Reliable, but up to $O(n^2)$ messages for n nodes!
 
 ## Replication
 
+- Keeping a copy of the same data on multiple nodes
+- Databases, filesystems, caches, ...
+- A node that has a copy of the data is called a **replica**
+- If some of the replicas are faulty, others are still accessible
+- Spread load across many replicas
+- Easy if the data does not change: just copy it
+- We will focus on data changes
+
+Compare to **RAID**: replication within a single computer
+
+- RAID has single controller; in distrbuted system, each node acts independently
+- Replicas can be distributed around the world, near users
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-30-220214.png" alt="image-20230930150214009" style="zoom:50%;" />
+
+When we try to deduplicate the requests, in a crash-recovery system model, this requires storing requests (or some metadata about requests, such as a vector clock) in stable storage, so that duplicates can be accurately detected even after a crash.
+
+An alternative to recording requests for deduplication is to make requests *idempotent*.
+
+### idempotent
+
+A fucntion $f$ is idempotent if $f(x)=f(f(x))$.
+
+- **Not idempotent**: $f(likeCount)=likecount+1$
+- **Idempotent**: $f(likeset)=likeset\or\{userID\}$
+
+Idempotent requests can be trtried without deduplication.
+
+Choice of retry behavior:
+
+- **At-most-once** semantics:
+
+  send request, don't retry, update may not happen
+
+- **At-least-once** semantics:
+
+  retry request until acknowledged, may repeat update
+
+- **Exactly-once** semantics:
+
+  retry+idempotence or deduplication
+
+But there are also some problems of using idempotence.
+
+**Adding and then removing again**
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-30-220921.png" alt="image-20230930150920592" style="zoom:50%;" />
+
+**Another problem with adding and removing**
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-30-221218.png" alt="image-20230930151217717" style="zoom:50%;" />
+
+Here. arises another problem: When the two replicas reconcile their inconsistent states, we want them to both end up in the state that the client intended. However, this is not possible if the replicas cannot distinguish between these two scenarios. To solve this problem, we can use timestamps and tombstones.
+
+### timestamps and tonbstones
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-30-222746.png" alt="image-20230930152745356" style="zoom:50%;" />
+
+"Remove($x$)" doesn't actually remove $x$: it labels $x$ with "false" to indicate it is invisible (a **tombstone**)
+
+Every record has **logical timestamp** of last write.
+
+In many replicated systems, replicas run a protocol to detect and reconcile any differences (this is called anti-entropy), so that the replicas eventually hold consistent copies of the same data. Thanks to tombstones, the anti-entropy process can tell the difference between a record that has been deleted and a record that has not yet been created. And thanks to timestamps, we can tell which version of a record is older and which is newer. The anti-entropy process then keeps the newer and discards the older record.
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-30-222931.png" alt="image-20230930152930525" style="zoom:50%;" />
+
+We can use lamport clocks or vector clocks to fulfil this goal.
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-30-225928.png" alt="image-20230930155927990" style="zoom:50%;" />
+
+Two common apporaches:
+
+#### Last writer wins (LWW)
+
+Use timestamps with total order (e.g. Lamport clock). Keep $v_2$ and scared $v_1$ if $t_2\gt t_1$. Note: **data loss**.
+
+> Since when using the Lamport clock total order, we cannot distinguish between the events with "happens-before" relationship and the events happen concurrently. As a result, we cannot split the concurrent events from the system events group.
+
+The update with the greatest timestamp takes effect, and any concurrent updates with lower timestamps to the same key are discarded. This approach is simple to work with, but it does imply data loss when multiple updates are performed concurrently. Whether or not this is a problem depends on the application: in some systems, discarding concurrent updates is fine. 
+
+When discarding concurrent updates is not acceptable, we need to use a type of timestamp that allows us to detect when updates happen concurrently, such as vector clocks. With such partially ordered timestamps, we can tell when a new value should overwrite an old value (when the old update happened before the new update), and when several updates are concurrent, we can keep all of the concurrently written values. These concurrently written values are called conflicts, or sometimes siblings. The application can later merge conflicts back into a single value.
+
+#### Multi-value register
+
+Use timestamps with partial order (e.g. vector clock). $v_2$ replaces $v_1$ if $t_2 \gt t_1$; preserve both $\{v_1, v_2\}$ if $t_1||t_2$.
+
+### Quorums
+
+#### Read-After-Write Consistency
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-30-231506.png" alt="image-20230930161505955" style="zoom:50%;" />
+
+Writing to one replica, reading from another: client does not read back the value it has written.
+
+require writing to/reading from both relics $\Rightarrow$ cannot write/read if one relica is unavailable.
+
+We can use **Quorum** to solve this problem.
+
+Now we give an example of using **Quorum**:
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-30-235958.png" alt="image-20230930165957051" style="zoom:50%;" />
+
+#### Read and write quorums
+
+In a system with $n$ replicas:
+
+- If a write is acknowledged by $w$ replicas (**write quorum**)
+- and we subsequently read from $r$ replicas (**read quorum**)
+- and $r+w \gt n$
+- then the read will see the previously written value (or a value that subsequently overwrote it)
+- Read quorum and write quorum share $\ge 1$ replica
+- Typical: $r=w=\frac{n+1}{2}$ for $n=3,5,7,...$(majority)
+- Reads can tolerate $n-r$ unavailable replicas, writes $n-w$ 
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-01-000604.png" alt="image-20230930170603180" style="zoom:50%;" />
+
+**Note**: 
+
+- If we wanna read the most recent data: If we already knows the version number of the most recent **committed** data, read $R$ replicas.
+- If we wanna read the most recent **committed** data/version number: ..., read until the highest version number appears $W$ times.
+
+#### Read repair
+
+In this quorum approach to replication, some updates may be missing from some replicas at any given moment, since that write request was dropped. To bring replicas back in sync with each other, one approach is to rely on an anti-entropy process mentioned before.
+
+Or, we can use something called **read repair**:
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-01-003223.png" alt="image-20230930173223199" style="zoom:50%;" />
+
+Since the client now knows that the update $(t1, v1)$ needs to be propagated to A, it can send that update to A (using the original timestamp $t1$, since this is not a new update, only a retry of a previous update). The client may also send the update to C, even though it does not know whether C needs it (if it turns out that C already has this update, only a small amount of network bandwidth is wasted). This process is called read repair. The client can perform read repair on any read request it makes, regardless of whether it was the client that originally performed the update in question.
+
+Databases use this model of replication are often called *Dynamo-style*, after Amazon's Dynamo database, which popularized it.
+
+### State machine replicaiton
+
