@@ -6,8 +6,6 @@ date:		2023-09-30
 lastmod:	2023-09-30
 author:		shaopu
 draft: 		false
-type: 		book
-
 image:		  
   focal_point: ''
   placement: 2
