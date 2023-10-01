@@ -38,7 +38,7 @@ This is a course notes for reviewing based on the distributed system course vide
   - Home broadband: 10Mbit/s
   - Hard drives in a van: 50TB/box - 1Gbit/s
 
-#### Client-server exmaple: the web
+#### Client-server example: the web
 
 When we talk about `messages` in distributed systems, we are not talking about one network packet, since a message maybe bigger than a single network packet, so the message has to be broken down into several network packets. 
 
