@@ -126,7 +126,13 @@ Intel的**Hyper-threading**就是基于`SMT`的典型设计之一。在该模式
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-03-21-010736.png" alt="image-20230320180736901" style="zoom:50%;" />
 
-需要注意的是，`SMT`具备从多个`instruction stream`中选择独立指令的能力并不意味着它一定要这么做，处理器会找到能够利用核心内所有执行单元的最佳方案，这种方案可能会从同一个线程中选择多个指令（this thread has sufficient ILP）同时执行，这会让处理器表现的像`interleaved multi-threading`一样。
+> superscalar processor:
+>
+> <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-03-185806.png" alt="img" style="zoom:50%;" />
+>
+> Intel's [Hyper-threading](http://www.intel.com/content/www/us/en/architecture-and-technology/hyper-threading/hyper-threading-technology.html) implementation makes sense if you consider the context: Intel had spent years building [superscalar processors](http://15418.courses.cs.cmu.edu/spring2015/lecture/basicarch/slide_012) that could perform a number of different instructions per clock (within a single instruction stream). But as we discussed, it's not always possible for one instruction stream to have the right mixture of independent instructions to utilize all the available units in the core (this is the case of insufficient [ILP](http://15418.courses.cs.cmu.edu/spring2015/lecture/whyparallelism/slide_028)). Therefore, it's a logical step to say, hey, to increase the CPU's chance of finding the right mix, let's modiy our processor to have two threads available to choose instructions from instead of one!
+
+需要[注意](http://15418.courses.cs.cmu.edu/spring2015/lecture/basicarch/slide_053)的是，`SMT`具备从多个`instruction stream`中选择独立指令的能力并不意味着它一定要这么做，处理器会找到能够利用核心内所有执行单元的最佳方案，这种方案可能会从同一个线程中选择多个指令（this thread has sufficient ILP）同时执行，这会让处理器表现的像`interleaved multi-threading`一样。
 
 当然，超线程的使用未必就比单线程的执行效果更好，因为多个线程共享一个`cache`可能会导致更多的`cache miss`。不仅如此，**在同一个`physical core`内，不管处理器提供了多少可能的硬件线程，他们的很多计算资源都是共享的**（这也是为什么即使在多核时代还是会在同一个核内设计多个逻辑核的原因----我们只需要对原有结构做不多的改动，就能够提高很大的性能指标，比如奔腾4增加`HT`技术只需要多花费5%的核心面积，就可以增加15-30%的多线程性能，而如果增加物理核心，增加多少性能，就至少要增加多少比例的核心数量）。而且还会有因为线程隔离不到位导致的线程安全问题...
 
