@@ -848,6 +848,143 @@ For every decision (message to deliver), the leader must first get acknowledgeme
 
 This part is omitted since I have already implemented raft algorithm in **MIT 6.824**.
 
+## Replica consistency 
+
+### Consistency
+
+A word that means many different things in different contexts.
+
+- **ACID**: a transaction the database from one "consistent" state to another
+
+  Here, "consistent"=satisfying application-specific invariants
+
+  e.g. "every course with students enrolled must have at least one lecturer"
+
+- **Read-after-write concsistency**: this is the consistency defined in the lecture 5 (also in the CAP theorem)
+
+  | <img src="/Users/shaopu/Library/Application Support/typora-user-images/image-20231002164516465.png" alt="image-20231002164516465" style="zoom:50%;" /> | <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-02-234544.png" alt="image-20231002164544476" style="zoom:50%;" /> |
+  | ------------------------------------------------------------ | ------------------------------------------------------------ |
+  | e.g. inconsistent system & consisten system                  |                                                              |
+
+- **Replication**: replica should be "consistent" with other replicas
+
+- **Consistency model**: many to choose from
+
+### Distributed transactions
+
+Recall **atomicity** in the context of ACID transactions:
+
+- A transaction either **commit** or **aborts**
+- If it commits, its updates are durable
+- If it aborts, it has no visible side-effects
+- ACID consistency (repserving invariants) relies on atomicity
+
+If the transaction updates data on multiple nodes, this implies:
+
+- Either all ndoes must commit, or all must abort
+- If any nodex crashes, all must abort
+
+Ensuring this is the **atomic commitment** problem. Looks a bit similar to consensus?
+
+#### Atomic commit versus consensus
+
+| Consensus                                                    | Atomic Commit                                                |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| One or more nodes propose a value                            | Every node votes whether to commit or abort                  |
+| Any one of the proposed values is decided                    | Must commit if all nodes vote to commit; must abort if $\ge 1$ nodes vote to abort |
+| Crashed nodes can be tolerated, as long as a quorum is working | Must abort if a participating node crashes                   |
+
+#### Two-phase commit (2PC)
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-03-000526.png" alt="image-20231002170525782" style="zoom:50%;" />
+
+> When using two-phase commit, a client first starts a regular single-node transaction on each replica that is participating in the transaction, and performs the usual reads and writes within those transactions. When the client is ready to commit the transaction, it sends a commit request to the transaction coordinator, a designated node that manages the 2PC protocol. (In some systems, the coordinator is part of the client.) The coordinator first sends a prepare message to each replica participating in the transaction, and each replica replies with a message indicating whether it is able to commit the transaction (this is the first phase of the protocol). The replicas do not actually commit the transaction yet, but they must ensure that they will definitely be able to commit the transaction in the second phase if instructed by the coordinator. This means, in particular, that the replica must write all of the transaction’s updates to disk and check any integrity constraints before replying ok to the prepare message, while continuing to hold any locks for the transaction. The coordinator collects the responses, and decides whether or not to actually commit the transaction. If all nodes reply ok, the coordinator decides to commit; if any node wants to abort, or if any node fails to reply within some timeout, the coordinator decides to abort. The coordinator then sends its decision to each of the replicas, who all commit or abort as instructed (this is the second phase). If the decision was to commit, each replica is guaranteed to be able to commit its transaction because the previous prepare request laid the groundwork. If the decision was to abort, the replica rolls back the transaction.
+
+#### The coordinator in 2PC
+
+What if the coordinator crashes?
+
+- Coordinator writes its decision to disk
+- When it recovers, read decision from disk and send it to replicas (or abort if no decision was mde before crash)
+- **Problem**: if coordinator crashes after prepare, but before broadcasting decision, other nodes do not know how it has crashed
+- Replicas participating in transaction cannot commit or abort after responding "ok" to the *prepare* request (otherwise we risk violating atomicity)
+- Algorithm is blocked until coordinator recovers
+
+> The problem with two-phase commit is that the coordinator is a single point of failure. Crashes of the coordinator can be tolerated by having the coordinator write its commit/abort decisions to stable storage, but even so, there may be transactions that have prepared but not yet committed/aborted at the time of the coordinator crash (called `in-doubt transactions`). Any `in-doubt` transactions must wait until the coordinator recovers to learn their fate; they cannot unilaterally decide to commit or abort, because that decision could end up being inconsistent with the coordinator and other nodes, which might violate atomicity.
+
+**solution: Fault-tolerant 2PC**:
+
+It is possible to avoid the single point of failure of the coordinator by using a consensus algorithm or total order broadcast protocol.
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-03-041936.png" alt="image-20231002211935782" style="zoom:50%;" />
+
+
+
+
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-03-041953.png" alt="image-20231002211952711" style="zoom:50%;" />
+
+Different from the previous 2PC, when one node received the "prepare" message from the corrdinator, it will perform total order broadcast with message tagged with "ok" to all other replicas. And there will be a faulty detector, which can be installed on either nodes or some other servers, to suspect whether node $T$ has crashed. If it draws this conclusion(crashed), it will send messages to all other replicas on behalf of this crashed node $T$, with a message tagged with "false". 
+
+This introduces a race condition: if node $B$ is slow, it might be that node $B$ broadcasts its own vote to commit around the same time that node $A$ suspects $B$ to have failed and votes on $B$’s behalf. These votes are delivered to each node by **total order broadcast**, and each recipient independently counts the votes. In doing so, we count only the first vote from any given replica, and ignore any subsequent votes from the same replica. Since total order broadcast guarantees the same delivery order on each node, all nodes will agree on whether the first delivered vote from a given replica was a commit vote or an abort vote, even in the case of a race condition between multiple nodes broadcasting contradictory votes for the same replica.
+
+#### 3PC
+
+1. Add a `CanCommit` stage
+2. Add timeout mechanism on coordinator and node
+
+#### 2PC with other topology 
+
+This part is not extracted from this course, it comes from [here](https://www.cs.ubc.ca/~bestchai/teaching/cs416_2017w2/lectures/lecture-mar12.pdf).
+
+We have previsouly focused on **centralized 2PC**.
+
+- +None of the worker node can influence one another
+- +Failure of a worker node independent 
+- -Put trust in coordinator
+- -Hope coordinator does not fail
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-03-044347.png" alt="image-20231002214347085" style="zoom:50%;" />
+
+We try to consider other possible protocols with different latency and bandwidth.
+
+- Time/Latency: rounds used by a protocol
+- Bandwidth: messages used by a protocol
+
+Two extremes:
+
+**Linear 2PC**: coordinator, and all workers in a single line.chain
+
+- Build a protocol that has fewer messages (but more rounds!) than 2PC
+- C-W1-W2-W3-...-Wn
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-03-044815.png" alt="image-20231002214814354" style="zoom:50%;" />
+
+**Decentralized 2PC**: all workers can communicate with one another
+
+- Build a protocol that has fewer rounds (but more messages) than 2PC
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-03-045207.png" alt="image-20231002215206963" style="zoom:50%;" />
+
+> The reason this method will work is: if one node tries to abort the txn, it will send message to all other nodes, and all other nodes will abort this txn all together. And all nodes will make decisions after it receives message from all other nodes, waiting otherwise.
+
+They are still susceptible to blocking.
+
+- **Linear 2PC**: Blocks if last node in the chain fails
+- **Decentralized 2PC**: Blocks if any node fails (or msg does not arrive: not enough information)
+
+|                   | Messages  | Rounds |
+| ----------------- | --------- | ------ |
+| Centralized 2PC   | 3n        | 3      |
+| Linear 2PC        | 2n        | 2n     |
+| Decentralized 2PC | n+n*(n-1) | 2      |
+
+### Linearizability
+
+
+
+
+
 
 
 

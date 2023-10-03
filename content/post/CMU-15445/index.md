@@ -21,6 +21,8 @@ categories:
 
 # CMU 15445 Database Systems
 
+This post is ONLY uploaded for personal reference. It might contain some simplification of the original notes. (you might also encounter some omissions when reading this, I didn't mean that.)
+
 ![page 2](https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-01-010328.png)
 
 ![page 3](https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-01-010336.png)
