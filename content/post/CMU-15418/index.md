@@ -288,6 +288,21 @@ export void mandelbrot_ispc_withtasks(uniform float x0, uniform float y0,
 
 > **MPI**（`message passing interface`）就是消息传送并行的实现之一
 
+基于消息传递的并发模型可以分为两种：
+
+- **CSP**(Communicating Sequential Process) -- e.g. Golang channel
+- **Actor** -- e.g. Erlang
+
+CSP模型的关键在于`channel`，他通过channel来实现消息传递，是一个**同步**模型，发送端会阻塞直到接收端读取消息。
+
+Actor模型则通过`mailbox`实现消息传递，是一个**异步**模型，发送端在将消息放入接收端的mailbox后，就继续工作而不被阻塞。
+
+| CSP                                                          | Actor                                                        |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-04-033121.png" alt="csp" style="zoom:50%;" /> | <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-04-033135.png" alt="actor" style="zoom:50%;" /> |
+
+
+
 #### 数据并行（`Data parallel`）
 
 可以将数据并行模型的计算过程抽象成`map(function, collection)`。在`ISPC`代码中，就可以将循环体作为一个`function`，将`foreach`结构作为`map`函数，操作的`X`数组是`collection`：我们对`X`中的每一个元素调用`function`函数----这正是`map`函数要做的事情。
