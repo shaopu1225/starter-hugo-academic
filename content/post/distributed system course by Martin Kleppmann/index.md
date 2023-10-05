@@ -21,7 +21,7 @@ categories:
     - CS course notes
 ---
 
-This is a course notes for reviewing based on the distributed system course videos by Martin Kleppmann. The source videos can be found [here](https://www.youtube.com/playlist?list=PLeKd45zvjcDFUEv_ohr_HdUFe97RItdiB).
+This is a course notes (with a few extensions from other sources and the original course notebook) for reviewing based on the distributed system course videos by Martin Kleppmann. The source videos can be found [here](https://www.youtube.com/playlist?list=PLeKd45zvjcDFUEv_ohr_HdUFe97RItdiB).
 
 ## Introduction
 
@@ -517,7 +517,7 @@ For example, `<2,2,0>` represents the first two events from A, the first two eve
 
 Broadcast (multicast) is **group communication**.
 
-- ONe node sends message, all nodes in group deliever it
+- One node sends message, all nodes in group deliever it
 - Set of group members may be fixed (static) or dynamic
 - If one node is faulty, remaining group members carry on (tolerance)
 - Note: concept is more general than **IP** multicast (we build upon p2p messaging, some local-area networks provide multicast or broadcast at the hardware level (for example, IP multicast), but communication over the Internet typically only allows unicast. Moreover, hardware-level multicast is typically provided on a best-effort basis, which allows messages to be dropped; making it reliable requires retransmission protocols similar to those discussed here.)
@@ -1114,6 +1114,100 @@ Properties:
 | Consensus, total order broadcast, linearizable CAS (these three are basically the same thing) | quorum                      | partcially synchronous |
 | linearizable get/set                                         | quorum                      | Asynchronous           |
 | eventual consistency, causal broadcast, FIFO broadcast       | local replica only          | asynchronous           |
+
+## Concurrency control in applications
+
+Nowadays we use a lot of **collaboration software**:
+
+- **Examples: ** canlendar sync, Google Docs, ...
+- Several users / devices working on a shared file.document
+- Each user device has local replica of the data
+- Update local replica anytime (even while offline), sync with others when netowkr available
+- **Challenge: **how to reconcile current updates?
+
+Families of **algorithms**:
+
+- Conflict-free Replicated Data Types (**CRDTs**)
+  - Operation-based
+  - State-based
+- Operational Transformation (**OT**)
+
+### Operation-based map CRDT
+
+It is an *operation-based* CRDT because each broadcast message contains a description of an update operation (as opposed to *state-based* CRDTs). 
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-05-073722.png" alt="image-20231005003722041" style="zoom:50%;" />
+
+Reliable broadcast mat deliver updates in any order:
+
+- Broadcast (set, $t1$, "title", "Lecture1")
+- Broadcast (set, $t2$, "time", "10:00")
+
+Recall **strong eventual consistency**:
+
+- **Eventual delivery**: every update made to one non-faulty replica is eventually processed by non-faulty replica
+- **Convergence**: any two replicas that have processed the same set of updates are in the same state
+
+CRDT algorithm implements this:
+
+- Reliable broadcast ensures every operation is eventually devliered to every (non-crashed) replica
+- Applying an operation is **commutative**: order of delivery doesn't matter (can use **reliable broadcast**, without requiring totally ordered delivery)
+
+> For the concurrent scenario, apparently it uses a LWW policy.
+
+### State-based map CRDT
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-05-095010.png" alt="image-20231005025010049" style="zoom:50%;" />
+
+Here, we introduces a `merge` operator, which only saves the latest version in the final state of each mapped `k`.
+
+Note here, updates are handled differently: instead of broadcasting each operation, we directly update values and then broadcast the whole of values. On delivering this message at another replica, we merge together the two replicas’ states using a merge function. This merge function compares the timestamps of entries with the same key, and keeps those with the greater timestamp. This approach of broadcasting the entire replica state and merging it with another replica’s state is called a *state-based CRDT*.
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-05-095224.png" alt="image-20231005025224093" style="zoom:50%;" />
+
+**State-based CRDT not necessarily uses broadcast, it can also merge concurrent updates to replicas e.g. in quorum replication, anti-entropy.**
+
+State-based -versus- operation-based:
+
+- Op-based CRDT typically has smaller messages
+- State-based CRDT can tolerate message loss/duplication ( as long as two replicas eventually succeed in exchanging their latest states, they will converge to the same state, even if some earlier messages were lost. Duplicated messages are also fine because the merge operator is idempotent. This is why a state-based CRDT can use unreliable best-effort broadcast, while an operation-based CRDT requires reliable broadcast (and some even require causal broadcast).)
+
+### Collaborative text editing: the problem
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-05-095837.png" alt="image-20231005025836563" style="zoom:50%;" />
+
+The problem is that at the time when *B* performed the operation `insert(2, “D”)`, index 2 referred to the position after character “C”. However, *A*’s concurrent insertion at index 0 had the effect of increasing the indexes of all subsequent characters by 1, so the position after “C” is now index 3, not index 2.
+
+#### Operational transformation
+
+Operational transformation is one of the approach to solve this problem. The general principle they have in common is:
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-05-100104.png" alt="image-20231005030104290" style="zoom:50%;" />
+
+A node keeps track of the history of operations it has performed. When a node receives another node’s operation that is concurrent to one or more of its own operations, it *transforms* the incoming operation relative to its own, concurrent operations.
+
+However, the transformation function becomes more complicated when deletions, formatting etc. are taken into account. An alternative to operational transformation, which avoids the need for total order broadcast, is to use a CRDT for text editing. 
+
+#### Text Editing CRDT
+
+Rather than identifying positions in the text using indexes, and thus necessitating operational transformation, text editing CRDTs work by attaching a unique identifier to each character. These identifiers remain unchanged, even as surrounding characters are inserted or deleted.
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-05-100347.png" alt="image-20231005030346443" style="zoom:50%;" />
+
+It is possible for two different nodes to generate characters with the same position number if they concurrently insert at the same position, so we can **use the ID of the node that generated a character to break ties for any characters that have the same position number**. Using this approach, conflict resolution becomes easy: an insertion with a particular position number can simply be broadcast to other replicas, which then add that character to their set of characters, and sort by position number to obtain the current document.
+
+|                                                              |                                                              |
+| ------------------------------------------------------------ | ------------------------------------------------------------ |
+| <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-05-102354.png" alt="image-20231005032354087" style="zoom:50%;" /> | <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-05-102411.png" alt="image-20231005032411087" style="zoom:50%;" /> |
+
+- Use causal broadcast so that insertion of a character is delivered before its deletion.
+- Insertion and deletion of different characters commute.
+
+
+
+
+
+
 
 
 
