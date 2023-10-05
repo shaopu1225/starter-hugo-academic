@@ -657,7 +657,9 @@ Here. arises another problem: When the two replicas reconcile their inconsistent
 
 Every record has **logical timestamp** of last write.
 
-In many replicated systems, replicas run a protocol to detect and reconcile any differences (this is called anti-entropy), so that the replicas eventually hold consistent copies of the same data. Thanks to tombstones, the anti-entropy process can tell the difference between a record that has been deleted and a record that has not yet been created. And thanks to timestamps, we can tell which version of a record is older and which is newer. The anti-entropy process then keeps the newer and discards the older record.
+In many replicated systems, replicas run a protocol to detect and reconcile any differences (this is called anti-entropy), so that the replicas eventually hold consistent copies of the same data. **Thanks to tombstones, the anti-entropy process can tell the difference between a record that has been deleted and a record that has not yet been created.** And thanks to timestamps, we can tell which version of a record is older and which is newer. The anti-entropy process then keeps the newer and discards the older record.
+
+### Reconciling Replicas
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-30-222931.png" alt="image-20230930152930525" style="zoom:50%;" />
 
@@ -679,7 +681,7 @@ When discarding concurrent updates is not acceptable, we need to use a type of t
 
 #### Multi-value register
 
-Use timestamps with partial order (e.g. vector clock). $v_2$ replaces $v_1$ if $t_2 \gt t_1$; preserve both $\{v_1, v_2\}$ if $t_1||t_2$.
+Use timestamps with partial order (e.g. vector clock). $v_2$ replaces $v_1$ if $t_2 \gt t_1$; preserve both $\{v_1, v_2\}$ if $t_1||t_2$ (and give it to the user to decide).
 
 ### Quorums
 
@@ -689,7 +691,7 @@ Use timestamps with partial order (e.g. vector clock). $v_2$ replaces $v_1$ if $
 
 Writing to one replica, reading from another: client does not read back the value it has written.
 
-require writing to/reading from both relics $\Rightarrow$ cannot write/read if one relica is unavailable.
+require writing to/reading from both replicas $\Rightarrow$ cannot write/read if one replica is unavailable.
 
 We can use **Quorum** to solve this problem.
 
@@ -979,7 +981,139 @@ They are still susceptible to blocking.
 | Linear 2PC        | 2n        | 2n     |
 | Decentralized 2PC | n+n*(n-1) | 2      |
 
-### Linearizability
+### Linearizability consistency
+
+Multiple nodes concurrently accessing reoplicated data. How do we define "consistency" here?
+
+The strongest option: **linearizability**. 
+
+- Informally: every operation takes effect **atomically** sometime after it started and before it finished
+- All operations bahave as if executed on a **single copy** of the data (even if there are in fact multiple replicas)
+- Consequence: every operation returns an "up-to-date" value, a.k.a "**strong consistency**"
+- Not just in distributed systems, also in shared-memory concurrency (memory on multi-core CPUs is not linearizable by default)
+
+Note: linearizability != serializability!
+
+#### Read-after-write consistency revisited
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-04-225032.png" alt="image-20231004155031386" style="zoom:50%;" />
+
+#### From the client's point of view
+
+**Note: THIS IS DIFFERENT FROM HAPPENS-BEFORE**.
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-04-225138.png" alt="image-20231004155137777" style="zoom:50%;" />
+
+> Assume we have a global observer.
+
+The key thing that linearizability cares about is whether one operation finished before another operation started, regardless of the nodes on which they took place. In the above figure, the two `get` operations both start after the `set` operation has finished, and therefore we expect the `get` operations to return the value $v1$ written by `set`.
+
+On the other hand, if the `get` and `set` operation overlap in time, in this case we don't necessarily know in which order the operations take effect. `get` may return either the value $v_1$ written by `set`, or $x$'s previous value $v_0$, and either result is acceptable.
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-04-230140.png" alt="image-20231004160140140" style="zoom:50%;" />
+
+#### No linearizable, despite quorum reads/writes -- ABD algorithm
+
+Quorum W + Quorum R + Read Repair
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-05-014607.png" alt="image-20231004184607230" style="zoom:50%;" />
+
+> Linearizability is not only about the relationship of a get operation to a prior set operation, but it can also relate one get operation to another. The above slide shows an example of a system that uses quorum reads and writes, but is nevertheless non-linearizable. Here, client 1 sets x to v1, and due to a quirk of the network the update to replica A happens quickly, while the updates to replicas B and C are delayed. Client 2 reads from a quorum of {A, B}, receives responses {v0, v1}, and determines v1 to be the newer value based on the attached timestamp. After client 2’s read has finished, client 3 starts a read from a quorum of {B, C}, receives v0 from both replicas, and returns v0 (since it is not aware of v1). **Thus, client 3 observes an older value than client 2, even though the real-time order of operations would require client 3’s read to return a value that is no older than client 2’s result**. This behaviour is not allowed in a linearizable system.
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-05-015125.png" alt="image-20231004185125437" style="zoom:50%;" />
+
+Fortunately, it is possible to make `get` and `set` operations linearizable using quorum reads and writes. First, for simplicity, assume that `set` operations are only performed by one designated node (we will remove this assumption later). In this model, `set` operations don’t change: as before, they send the update to all replicas, and wait for acknowledgement from a quorum of replicas. 
+
+For `get` operations, another step is required, as shown the following slide. A client must first send the get request to replicas, and wait for responses from a quorum. If some responses include a more recent value than other responses, as indicated by their timestamps, then the client must write back the most recent value to all replicas that did not already respond with the most recent value, like in **read repair** mentioned before. **The `get` operation finishes only after the client is sure that the most recent value is stored on a quorum of replicas: that is, after a quorum of replicas either responded ok to the read repair, or replied with the most recent value in the first place.**
+
+> The reason this method will fix the bug is that: consider a later client 3 `get` opertaion after client 2 has finished its op, then client 3 will read the newest result. While if client 3's `get` operation is performed currently with client 2, then there is no extra linearizability requirement.
+>
+> And if all the servers read by client 2 has a old value, then the value client 3 read in this case must be as new as the one read by client 2, which will not cause a problem.
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-05-015547.png" alt="image-20231004185546869" style="zoom:50%;" />
+
+This approach is known as the **ABD** algorithm.
+
+To generalize ABD algorithm to a setting where multiple nodes may perform `set` operations, we need to ensure timestamps reflect the real-time ordering of operations. Say operation `set(x, v1)` has a timestamp of $t1$, operation `set(x, v2)` has a timestamp of $t2$, and the first operation finishes before the second operation starts: then we must ensure that $t1 < t2$. 
+
+We can do this by having each `set` operation first request the latest timestamp from each replica and waiting for responses from a quorum (like in a `get` operation). The logical timestamp for the `set` operation is then one plus the maximum timestamp received from the quorum. Since the quorum is guaranteed to contain at least one replica that has observed any `set` operation that has completed, we get the required ordering of timestamps.
+
+> With the above optimization, we achieve three types of consistency to achieve a linearizability consistency system:
+>
+> 1. Read-Read linearizability consistency by Read Repair
+> 2. Write-Write linearizability consistency by the above "Write Repair" 
+> 3. Read-Write Consistency by quorum mechanism 
+
+#### Linearizability for different types of operation
+
+This ensures linearizability of `get` (quorum read) and `set` (**blind write** to quorum).
+
+- When an operation finishes, the value read/written is stored on a quorum of replicas
+- Every subsequent quorum operation will see that value
+- **Multiple concurrent writes may overwrite each other**
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-05-025435.png" alt="image-20231004195434409" style="zoom:50%;" />
+
+> This is a LWW policy.
+
+In some applications, we want to be more careful and overwrite a value only if it has not been concurrently modified by another node. This can be achieved with an *atomic compare-and-swap* (**CAS**) operation. 
+
+Can we implement **linearizable** CAS in a distributed system?
+
+- Yes: total order broadcast to the rescue again.
+
+#### Linearizable CAS
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-05-025947.png" alt="image-20231004195946904" style="zoom:50%;" />
+
+### Eventual consistency
+
+Linearizability advantages:
+
+- makes a distributed system behave as if it were non-distributed
+- Simple for applications to use
+
+Downsides:
+
+- **Performance** cost: lots of messages and waiting for repsonses
+- **Scalability** limits: leader can be a bottleneck
+- **Availability** problems: if you cannot contact a quorum of nodes, you cannot process any operations
+
+That's why we need other consistency models, such as **eventual consistency**.
+
+#### The CAP theorem
+
+A system can be either strongly **Consistent** (linearizable) or **Available** in the presence of a network **Partition**. 
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-05-062120.png" alt="image-20231004232119309" style="zoom:50%;" />
+
+#### Eventual consistency
+
+The approach of allowing each replica to process both reads and writes based only on its local state, and without waiting for communication with other replicas, is called **optimistic replication**. A variety of consistency models have been proposed for optimistically replicated systems, with the best-known being **eventual consistency**.
+
+- Replicas process operations based only on their local state.
+
+- If there are no more replicas, **eventually** all replicas will be in the same state. (No guarantees how long it might take.)
+
+#### Strong eventual consistency
+
+- **Eventual delivery**: every update made to one non-fualty replica is eventually processed by every non-faulty replica
+- **Convergence**: any two replicas that have processed the same set of updates are in the same state (even if updates were processed in a different order, kind of like commutative property in causal order)
+
+Properties:
+
+- Does not require waiting for network communication
+- Causal broadcast (or weaker) can disseminate updates
+- Concurrent updates $\Rightarrow$ **Conflicts** need to be resolved
+
+## Summary of minimum system model requirements
+
+| Problem                                                      | Must wait for communication | Requires synchrony     |
+| ------------------------------------------------------------ | --------------------------- | ---------------------- |
+| Atomic commit                                                | all participating nodes     | partially synchronous  |
+| Consensus, total order broadcast, linearizable CAS (these three are basically the same thing) | quorum                      | partcially synchronous |
+| linearizable get/set                                         | quorum                      | Asynchronous           |
+| eventual consistency, causal broadcast, FIFO broadcast       | local replica only          | asynchronous           |
 
 
 
