@@ -1203,9 +1203,69 @@ It is possible for two different nodes to generate characters with the same posi
 - Use causal broadcast so that insertion of a character is delivered before its deletion.
 - Insertion and deletion of different characters commute.
 
+### Google Spanner
 
+Consistency properties:
 
+- **Serializable** transaction isolation
+- **Linearizable** read and writes
+- Many **shards**, each holding a subset of the data; atomic commit of transactions across shards
 
+Many standard techniques:
+
+- State machine replication (Paxos) within a shard
+- 2PL for serializability
+- 2PC for cross-shard atomicity
+
+The interesting bit: read-only transactions require **no locks**!
+
+#### Consistent snapshot
+
+A read-only transaction observers a **consistent snapshot**:
+
+If $T_1\rightarrow T_2$,
+
+- Snapshot reflecting writes by $T_2$ also reflects writes by $T_1$
+- Snapshot that does not reflect writes by $T_1$ does not reflect writes by $T_2$ either
+- In other words, snapshot is **consistent with causality**
+- Even if read-only transactgion runs for a long time
+
+Approach: **MVCC**
+
+- Each read-write transaction $T_w$ has commit timestamp $t_w$
+- Every value is tagged with timestamp $t_w$ of transaction that wrote it  (not overwriting previous value)
+- Read-only transaction $T_r$ has snapshot timestamp $t_r$ 
+- $T_r$ ignores values with $t_w > t_r$; observers most recent value with $t_w < t_r$
+
+#### Obtaining commit timestamps
+
+Must ensure that whenever $T_1\rightarrow T_2$ we have $t_1 < t_2$.
+
+- Physical clocks may be **inconsistent with causality**. 
+- Can we use Lamport clocks instead?
+- Problem: linearizability depends on **real-time order**, and logical clocks may not reflect this!
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-05-110907.png" alt="image-20231005040906316" style="zoom:50%;" />
+
+Usually, in this case, since we have observed the "happens-before" relationship between *A* and *B* (there is also linearizability here), so the $T_2$ should have a higher timestamp than $T_1$. 
+
+However, the communication goes via a user, and we cannot expect a human to include a properly formed timestamp on every action they perform. Without a reliable mechanism for propagating the timestamp on every communication step, logical timestamps cannot provide the ordering guarantee we need.
+
+#### TrueTime: explicit physical clock uncertainty
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-05-111643.png" alt="image-20231005041643215" style="zoom:50%;" />
+
+Assign the $t_{i,latest}$ to be the commit timestamp of $T_i$.
+
+> Even though we don’t have perfectly synchronised clocks, and thus a node cannot know the exact physical time of an event, **this algorithm ensures that the timestamp of a transaction is less than the true physical time at the moment when the transaction commits**. Therefore, if $T2$ begins later in real time than $T1$, the earliest possible timestamp that could be assigned to $T2$ must be greater than $T1$’s timestamp. Put another way, the waiting ensures that the timestamp intervals of $T1$ and $T2$ do not overlap, even if the transactions are executed on different nodes with no communication between the two transactions.
+
+Since every transaction has to wait for the uncertainty interval to elapse, the challenge is now to keep that uncertainty interval as small as possible so that transactions remain fast. 
+
+#### Determining clock uncertainty in TrueTime
+
+Google achieves this by installing atomic clocks and GPS receivers in every datacenter, and synchronising every node’s quartz clock with a time server in the local datacenter every 30 seconds. In the local datacenter, round-trips are usually below 1 ms, so the clock error introduced by network latency is quite small. If the network latency increases, e.g. due to congestion, TrueTime’s uncertainty interval grows accordingly to account for the increased error.
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-05-120816.png" alt="image-20231005050816270" style="zoom:50%;" />
 
 
 
