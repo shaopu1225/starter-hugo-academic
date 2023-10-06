@@ -900,7 +900,7 @@ Ensuring this is the **atomic commitment** problem. Looks a bit similar to conse
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-03-000526.png" alt="image-20231002170525782" style="zoom:50%;" />
 
-> When using two-phase commit, a client first starts a regular single-node transaction on each replica that is participating in the transaction, and performs the usual reads and writes within those transactions. When the client is ready to commit the transaction, it sends a commit request to the transaction coordinator, a designated node that manages the 2PC protocol. (In some systems, the coordinator is part of the client.) The coordinator first sends a prepare message to each replica participating in the transaction, and each replica replies with a message indicating whether it is able to commit the transaction (this is the first phase of the protocol). The replicas do not actually commit the transaction yet, but they must ensure that they will definitely be able to commit the transaction in the second phase if instructed by the coordinator. This means, in particular, that the replica must write all of the transaction’s updates to disk and check any integrity constraints before replying ok to the prepare message, while continuing to hold any locks for the transaction. The coordinator collects the responses, and decides whether or not to actually commit the transaction. If all nodes reply ok, the coordinator decides to commit; if any node wants to abort, or if any node fails to reply within some timeout, the coordinator decides to abort. The coordinator then sends its decision to each of the replicas, who all commit or abort as instructed (this is the second phase). If the decision was to commit, each replica is guaranteed to be able to commit its transaction because the previous prepare request laid the groundwork. If the decision was to abort, the replica rolls back the transaction.
+> When using two-phase commit, a client first starts a regular single-node transaction on each replica that is participating in the transaction, and performs the usual reads and writes within those transactions. When the client is ready to commit the transaction, it sends a commit request to the transaction coordinator, a designated node that manages the 2PC protocol. (In some systems, the coordinator is part of the client.) The coordinator first sends a prepare message to each replica participating in the transaction, and each replica replies with a message indicating whether it is able to commit the transaction (this is the first phase of the protocol). **The replicas do not actually commit the transaction yet, but they must ensure that they will definitely be able to commit the transaction in the second phase if instructed by the coordinator. This means, in particular, that the replica must write all of the transaction’s updates to disk (write a `PREPARE` record to the disk) and check any integrity constraints before replying ok to the prepare message, while continuing to hold any locks for the transaction.** The coordinator collects the responses, and decides whether or not to actually commit the transaction. If all nodes reply ok, the coordinator decides to commit; if any node wants to abort, or if any node fails to reply within some timeout, the coordinator decides to abort. The coordinator then sends its decision to each of the replicas, who all commit or abort as instructed (this is the second phase). If the decision was to commit (then the slave will fsync `COMMIT` record to the WAL log), each replica is guaranteed to be able to commit its transaction because the previous prepare request laid the groundwork. If the decision was to abort, the replica rolls back the transaction.
 
 #### The coordinator in 2PC
 
@@ -926,14 +926,92 @@ It is possible to avoid the single point of failure of the coordinator by using 
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-03-041953.png" alt="image-20231002211952711" style="zoom:50%;" />
 
-Different from the previous 2PC, when one node received the "prepare" message from the corrdinator, it will perform total order broadcast with message tagged with "ok" to all other replicas. And there will be a faulty detector, which can be installed on either nodes or some other servers, to suspect whether node $T$ has crashed. If it draws this conclusion(crashed), it will send messages to all other replicas on behalf of this crashed node $T$, with a message tagged with "false". 
+Different from the previous 2PC, when one node received the "prepare" message from the coordinator, it will perform total order broadcast with message tagged with "ok" to all other replicas. And there will be a faulty detector, which can be installed on either nodes or some other servers, to suspect whether node $T$ has crashed. If it draws this conclusion(crashed), it will send messages to all other replicas on behalf of this crashed node $T$, with a message tagged with "false". 
 
 This introduces a race condition: if node $B$ is slow, it might be that node $B$ broadcasts its own vote to commit around the same time that node $A$ suspects $B$ to have failed and votes on $B$’s behalf. These votes are delivered to each node by **total order broadcast**, and each recipient independently counts the votes. In doing so, we count only the first vote from any given replica, and ignore any subsequent votes from the same replica. Since total order broadcast guarantees the same delivery order on each node, all nodes will agree on whether the first delivered vote from a given replica was a commit vote or an abort vote, even in the case of a race condition between multiple nodes broadcasting contradictory votes for the same replica.
 
 #### 3PC
 
-1. Add a `CanCommit` stage
-2. Add timeout mechanism on coordinator and node
+In a word, 3PC provides two mechanisms: 
+
+1. Add a 1st `CanCommit` stage (get the transaction lock, no log record added) (If any of the participants respond with a *no* or if any participants failed to respond within a defined time, then the coordinator sends an *abort* to every participant. This indicates, if the stages goes into the PreCommit, then all slaves agree on committing.) to allow the use of **electing recovery coordinator**. 
+2. Add timeout mechanism on coordinator and node, there will be no forever waiting and retries.
+
+Now we will elaborate why we need 3PC to solve what kinds of problems of 2PC.
+
+In 2PC, we will encounter several kinds of failures.
+
+First, we divide the failures into three types:
+
+1. **Only slave(s) fails**
+2. **Only coordinator fails**
+3. **Coordinator and slave(s) fail together**
+
+For the **1st** type of failure, we can divide it into another two possible situations:
+
+- Slave died before sending `READY` message back to the coordinator
+
+The coordinator will find it does not receive the message from this slave, and it will decide to **ABORT** the transaction. (This means in 2PC, the coordinator kinds of have a "timeout" mechanism).
+
+- Slave died after sending `READY`  message back to the coordinator (this means the coordinator's decision has been made to the disk)
+
+In 2PC, the coordinator will try forever until it get contact with the slave. And when the slave recovers, the coordinator will tell it what to do. 
+
+> Actually, if the slave recovers, and find there is a `COMMIT` or `ABORT` message in its stable log, it will perform the corresponding operations as normal recovery algorithms require. 
+>
+> However, if it only finds a `READY` record in its log, things get complicated. It must **recontact** the coordinator/wait for the coordinator's decision to get the knowledge of the current transaction.
+
+For the **2nd** type of failure, without the help of **recovery coordinator**, as illustarated before in the "The coordinator in 2PC" part:
+
+- If the coordinator doesn't find a `COMMIT` or `ABORT` record, just re-perform the protocol.
+- If the coordinator finds the `COMMIT` or `ABORT` record, just re-perform the corresponding operation. In this process, all the slaves must **wait**. 
+
+Or usually, we can use a **recovery coordinator** to help the recovery process. It queries the participants. This process is very similar to the above.
+
+- If at least one participant has received a `COMMIT` or `ABORT` message then the new coordinator knows that the vote to commit must have been unanimous and it can tell the others to commit/abort. 
+- If no participants received a `COMMIT` or `ABORT` message then the new coordinator can **restart** the protocol.
+
+**But here comes the problem with the 3rd kind of failure WITH THE USE OF RECOVERY COORDINATOR**. 
+
+When recover, like the discussion happend in the above part, first let we check the version WITHOUT the help of recovery coordinator:
+
+- If the coordinator doesn't find a `COMMIT` or `ABORT` record, just re-perform the protocol.
+
+- If the coordinator finds the `COMMIT` or `ABORT` record, just re-perform the corresponding operation. In this process, all the slaves must **wait**. 
+
+With the help of **recovery coordinator**, problems appear:
+
+If all the live participants said they didn't receive the `COMMIT` message, the coordinator does not know whether there was a consensus and the dead participant may have been the only one to receive the `COMMIT` message (which it will process when it recovers). As such, the coordinator cannot tell the other participants to make any progress; **it must wait for the dead participant to come back.** This situation is called **BLOCKING**. 
+
+**As a result, we will use 3PC**. 
+
+When in 3PC we encounter the above situation and we select a new **recovery coordinator**, then there will still be no problem since: 
+
+- If one participant is found to be in phase 2, that means that *every* participant has completed phase 1 and voted on the outcome. The completion of phase 1 is guaranteed. It is possible that some (died) participants may have received commit requests (phase 3). The recovery coordinator can safely resume at phase 2 (either `PREPARE` or `ABORT` broadcasted due to the `CanCommit` phase).
+- If all participant was in phase 1, that means NO participant has started commits or aborts. The protocol can start at the beginning
+- If one participant was in phase 3, the coordinator can continue in phase 3 – and make sure everyone gets the commit/abort request
+
+The second thing 3PC performed is a meshanism of timeout (name as `Timeout Actions`):
+
+**Phase 1:**
+
+- Participant aborts if it doesn’t hear from a coordinator in time
+
+- Coordinator sends aborts to all if it doesn’t hear from any participant (like the 2PC)
+
+**Phase 2:**
+
+- If coordinator times out waiting for a participant – ignore the failure, prepare to boradcast `COMMIT`
+
+- If participant times out waiting for a coordinator, elect a new coordinator
+
+**Phase 3:**
+
+- If a participant fails to hear from a coordinator, elect a new coordinator
+
+There are also some problems:
+
+The three-phase commit protocol suffers from two problems. First, a partitioned network may cause a subset of participants to elect a new coordinator and vote on a different transaction outcome. Secondly, it does not handle fail-recover well. If a coordinator that died recovers, it may read its write-ahead log and resume the protocol at what is now an obsolete state, possibly issuing conflicting directives to what already took place. The protocol does not work well with fail-recover systems.
 
 #### 2PC with other topology 
 
