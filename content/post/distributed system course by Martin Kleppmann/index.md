@@ -934,7 +934,7 @@ This introduces a race condition: if node $B$ is slow, it might be that node $B$
 
 In a word, 3PC provides two mechanisms: 
 
-1. Add a 1st `CanCommit` stage (get the transaction lock, no log record added) (If any of the participants respond with a *no* or if any participants failed to respond within a defined time, then the coordinator sends an *abort* to every participant. This indicates, if the stages goes into the PreCommit, then all slaves agree on committing.) to allow the use of **electing recovery coordinator**. 
+1. Add a 1st `CanCommit` stage (get the transaction lock, no log record added) to allow the use of **electing recovery coordinator**. 
 2. Add timeout mechanism on coordinator and node, there will be no forever waiting and retries.
 
 Now we will elaborate why we need 3PC to solve what kinds of problems of 2PC.
@@ -983,31 +983,31 @@ With the help of **recovery coordinator**, problems appear:
 
 If all the live participants said they didn't receive the `COMMIT` message, the coordinator does not know whether there was a consensus and the dead participant may have been the only one to receive the `COMMIT` message (which it will process when it recovers). As such, the coordinator cannot tell the other participants to make any progress; **it must wait for the dead participant to come back.** This situation is called **BLOCKING**. 
 
-**As a result, we will use 3PC**. 
+**From the above discussion, we can see that in 2PC, there are multiple cases of possible blocking, so 3PC is proposed**. 
+
+Based on the discussion of the 3PC in 《Concurrency-Control-And-Recovery-in-Database-Systems》, we want to build a system with *NB* property:
+
+**NB:** If any operational process is uncertain then no process (whether operational or failed) can have decided to commit.
+
+This will allow uncertain process to abort since no other processes are allowed to commit. And we can consider **why 2PC violates NB**. The coordinator sends `COMMIT` to the participants while the latter are uncertain. Thus if participant $p$ receives a `COMMIT` before participant `q`, the former will decide Commit while the latter are still uncertain, so this leads to the situation that the uncertain processes are not allowed to abort becasue some other processes might have committed themselves. 
+
+But in 3PC, we use a `CanCommit` period to solve this problem. After the coordinator has found that all votes were Yes, it sends `PreCommit` messages to the participants. When a participant $p$ receives that message, it knows that all processes voted Yes and is thereby moved outside its uncertainty period. $p$ does not, however, decide COmmit yet. At this point, $p$ knows that it will decide Commit *provided it does not fail*. 
+
+And in 3PC, we need to cope with the following `timout actions`:
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-08-044042.png" alt="image-20231007214041873" style="zoom:50%;" />
+
+1. ABORT
+2. ABORT
+3. Elect a recovery coordinator
+4. Commit
+5. Elect a recovery coordinator
 
 When in 3PC we encounter the above situation and we select a new **recovery coordinator**, then there will still be no problem since: 
 
 - If one participant is found to be in phase 2, that means that *every* participant has completed phase 1 and voted on the outcome. The completion of phase 1 is guaranteed. It is possible that some (died) participants may have received commit requests (phase 3). The recovery coordinator can safely resume at phase 2 (either `PREPARE` or `ABORT` broadcasted due to the `CanCommit` phase).
 - If all participant was in phase 1, that means NO participant has started commits or aborts. The protocol can start at the beginning
 - If one participant was in phase 3, the coordinator can continue in phase 3 – and make sure everyone gets the commit/abort request
-
-The second thing 3PC performed is a meshanism of timeout (name as `Timeout Actions`):
-
-**Phase 1:**
-
-- Participant aborts if it doesn’t hear from a coordinator in time
-
-- Coordinator sends aborts to all if it doesn’t hear from any participant (like the 2PC)
-
-**Phase 2:**
-
-- If coordinator times out waiting for a participant – ignore the failure, prepare to boradcast `COMMIT`
-
-- If participant times out waiting for a coordinator, elect a new coordinator
-
-**Phase 3:**
-
-- If a participant fails to hear from a coordinator, elect a new coordinator
 
 There are also some problems:
 
