@@ -19,7 +19,7 @@ categories:
     - Programming Language
 ---
 
-{{toc}}
+{{%toc%}}
 
 本文讨论一些我觉得自己会忘记的点，不作为完整的对于Coherency和consistency（memory order）的入门文章，如果想要完整的入门这部分，可以参见我文章最后给出的references。
 
