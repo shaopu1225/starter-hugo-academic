@@ -236,7 +236,7 @@ Seq_cst保证了所有CPU能够看到完全一致的内存顺序（`global memor
 
 - **X86中的seq_cst和acq_rel都是如何实现的**
 
-如果我们查看汇编代码，会发现seq_cst的内存一致性由`xchg`实现，其实就相当于`mov+mfence`；这意味着acq_rel仅需要`mov`操作就可以达到（在X86上），因为X86本身就是一个store buffer+store forwarding+SC的系统，其事实上确保的TSO模型，保证了满足acq_rel语义的要求。但是在别的平台上，如果我们需要手动指定（设置屏障），可以考虑`std::atomic_thread_fence()`，其提供了一系列基于不同memory order的屏障选择，这里不再展开。
+如果我们查看汇编代码，会发现seq_cst的内存一致性由`xchg`实现，其实就相当于`mov+mfence`；这意味着acq_rel仅需要`mov`操作就可以达到（在X86上），因为X86本身就是一个store buffer+store forwarding+SC的系统，其事实上确保的TSO模型，保证了满足acq_rel语义的要求（仅有可能发生store-load重排序，但这并不影响acq-rel语义）。但是在别的平台上，如果我们需要手动指定（设置屏障），可以考虑`std::atomic_thread_fence()`，其提供了一系列基于不同memory order的屏障选择，这里不再展开。
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-10-10-114011.png" alt="image-20231010044010578" style="zoom:50%;" />
 
