@@ -1,7 +1,7 @@
 ---
 title:		CS 144
 subtitle:	CS 144
-summary: 	notes of Stanford CS144: Computer networks
+summary:	notes of Stanford CS144 Computer networks
 date:		2024-02-15
 author:		shaopu
 draft: 		false
