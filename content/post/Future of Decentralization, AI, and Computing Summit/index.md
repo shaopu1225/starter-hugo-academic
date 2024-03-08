@@ -17,7 +17,7 @@ categories:
 
 ## Fedarated Learning Defintion
 
-> **Federated learning** (also known as **collaborative learning**) is a machine learning technique that trains an algorithm via multiple independent sessions, each using its own dataset. [1] This approach stands in contrast to traditional centralized machine learning techniques where local datasets are merged into one training session, as well as to approaches that assume that local data samples are identically distributed.
+**Federated learning** (also known as **collaborative learning**) is a machine learning technique that trains an algorithm via multiple independent sessions, each using its own dataset. [1] This approach differs from traditional machine learning methods, which combine local datasets into a single training session or assume that local datasets are uniformly distributed.
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-08-025411.png" alt="Federated Learning: Collaborative Machine Learning without Centralized  Training Data – Google Research Blog" style="zoom: 50%;" />
 
@@ -29,11 +29,11 @@ It involves local training, local model update, secure aggregation and glocal mo
 
 ## Classification
 
-Federated learning can be divided into horizontal federated learning, vertical federated learning and federated transfer learning according to the distribution of data.[2]
+Federated learning can be divided into horizontal learning, vertical learning and transfer learning based on the distribution of data.[2]
 
 - **Horizontal Federated Learning**: Suitable when the user features of the two datasets overlap a lot, but the users overlap little. This pattern allows the increasing of user sample size and improvement of model accracy.
 - **Vertical Federated Learning**: Available when the user features of the two datasets overlap little, but the users overlap a lot. This pattern usually can be leveraged to increase the user feature dimension.
-- **Federated transfer Learning**: Users and user features of the two datasets both rarely overlap. Transfer learning must be introduced to solve the problems of small unilateral data size and small label samples.[3]
+- **Federated transfer Learning**: Users and user features of the two datasets both rarely overlap. Transfer learning can be used to solve the problems of small label samples and small unilateral data sizes.[3]
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-08-025323.png" alt="image-20230907195323234" style="zoom:50%;" />
 
@@ -75,15 +75,13 @@ Homomorphic Encryption allows participants to encode their local model updates i
 
 ### Differential privacy
 
-Differential privacy is proposed by Dwork in 2006 to solve the problem of privacy leaking in database. 
+Differential privacy is proposed by Dwork [7] in 2006. Under this strategy, the data calculation results in the statistical database are not sensitive to whether new data is added to the database (because of the data volume and the size of a single data type), so even if the attacker tries to add new data to the database, It is difficult to influence the final calculation results. We can then apply this strategy to the data set, which means that the abnormal data added by the attacker will not have an uncontrollable impact on the final result when applying this strategy.
 
-> The calculation results of the database are insensitive to the changes of a specific record, and a single record in the dataset or not in the dataset has little impact on the calculation results. Therefore, the risk of privacy disclosure caused by the addition of a record to the dataset is controlled in a very small and acceptable range, and the attacker cannot obtain accurate individual information by observing the calculation results.[7]
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-08-042022.jpg" alt="基于差分隐私联邦学习的系统模型。" style="zoom: 80%;" />
 
-<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-09-08-042022.jpg" alt="基于差分隐私联邦学习的系统模型。" style="zoom: 67%;" />
+A traditional method is to add noise to the output to apply differential privacy when performing gradient iteration, to protect user's privacy.[8] However, adding noise to the model will inevitably decrease the validity of the result. We need to figure out some methods to balance between privacy and validity.
 
-A traditional method is to add noise to the output to apply differential privacy in the process of gradient iteration, so as to achieve the goal of protecting user privacy.[8] However, adding noise to the model will inevitably decrease the validity of the result. A lot of research work is carried out around the two aspects of privacy protection and validity to achieve the balance between privacy and validity.
-
-The TensorFlow provides users with interface of differential privacy on application of EMINST dataset[4], using the method of adaptive clipping method of [Andrew et al. 2021, Differentially Private Learning with Adaptive Clipping](https://arxiv.org/abs/1905.03871) to avoid adding unnecessary noise and reduce the penetration from the adding noise to the model.[9]
+For example, the TensorFlow provides users with interface of differential privacy on application of EMINST dataset[4], using the method of adaptive clipping method of [Andrew et al. 2021, Differentially Private Learning with Adaptive Clipping](https://arxiv.org/abs/1905.03871) to avoid adding unnecessary noise and reduce the penetration from the adding noise to the model.[9]
 
 ## Network (nodes) structure
 
@@ -93,15 +91,9 @@ According to different coordination methods, federated learning can be divided i
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2023-12-09-082450.gif" alt="Central Topology (Sun Java Communications Suite 5 Deployment Planning Guide)" style="zoom: 67%;" />
 
+Different from traditional machine learning training conducted in data centers, the centralized training mode in federated learning still uses distributed nodes to complete local gradient updates. After the nodes encrypt the updated gradient parameters and pass them to the central server, the central The server will perform secure aggregation on it and then return the result to the node, which will perform gradient updates after decryption.
 
-The training mechanism in a centralized topology model involves a four-step process:
-
-1. Local Gradient Calculation and Masking: Participants first compute gradients of the model on their local data. They then apply security measures such as homomorphic encryption and differential privacy to these gradients before transmitting the encrypted data to a central server.
-2. Secure Aggregation by the Server: The central server aggregates these encrypted gradients, often using methods like weighted averaging that are compatible with the encryption methods used (e.g., homomorphic encryption).
-3. Distribution of Aggregated Results: The server then dispatches these aggregated results back to all the participants.
-4. Model Parameter Update: Upon receiving this data, each participant decrypts the gradient information and updates their model parameters accordingly, using the results they've just decrypted.
-
-The centralized topology offers notable benefits such as ease of deployment, straightforward control during the training process, and simplicity in maintenance. However, it also presents clear downsides: the central server can become a bottleneck, and there's an inherent risk of privacy breaches or susceptibility to malicious attacks on this central computing entity.
+Centralized topology offers significant advantages, such as ease of deployment, direct control during training, and simple maintenance. However, it also has significant disadvantages: the central server can become a bottleneck, and there is an inherent risk of privacy leakage or vulnerability to malicious attacks on this central computing entity.
 
 ### P2P
 
@@ -109,8 +101,8 @@ The centralized topology offers notable benefits such as ease of deployment, str
 
 In a peer-to-peer network setup, lacking a central server for coordination, participants must establish a predetermined sequence for the transmission and reception of model parameter data. This is typically achieved through two primary approaches:
 
-1. **Sequential Communication**: Here, participants arrange themselves in a sequential, chain-like formation. Starting with the first in line, each participant transmits their trained model parameters to the next in the sequence. Upon receiving the model, a participant updates it with their own data before passing the revised model to the following participant. This cycle continues until the model's loss stabilizes.
-2. **Stochastic Communication**: In this method, once a participant, labeled as the *k*th participant, completes their training, they randomly choose another participant from the remaining pool to be the next trainer. The *k*th participant then forwards the model parameters directly to their selected successor. This procedure is reiterated until the overall model reaches 
+1. **Sequential Communication**: Participants arrange themselves in a sequential, chain-like formation. Starting with the first in line, each participant transmits their trained model parameters to the next. Upon receiving the model, a participant updates it with their own data before passing the revised model to the following participant. This cycle continues until the model's loss stabilizes.
+2. **Stochastic Communication**: In this method, once a participant, labeled as the *k*th participant, completes their training, they randomly choose another participant from the remaining pool to be the next trainer. The *k*th participant then forwards the model parameters directly to their selected successor. This procedure is reiterated until the overall model reaches stable.
 
 ## Use Scenarios
 
