@@ -8,12 +8,12 @@
         "type": "tabs",
         "children": [
           {
-            "id": "82397abe5b5b99c8",
+            "id": "41f679117453cf84",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "distributed system course by Martin Kleppmann/index.md",
+                "file": "CS-144/index.md",
                 "mode": "source",
                 "source": false
               }
@@ -85,7 +85,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "distributed system course by Martin Kleppmann/index.md",
+                "file": "CS-144/index.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -102,7 +102,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "distributed system course by Martin Kleppmann/index.md",
+                "file": "CS-144/index.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -125,7 +125,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "distributed system course by Martin Kleppmann/index.md"
+                "file": "CS-144/index.md"
               }
             }
           }
@@ -146,13 +146,16 @@
       "command-palette:打开命令面板": false
     }
   },
-  "active": "82397abe5b5b99c8",
+  "active": "41f679117453cf84",
   "lastOpenFiles": [
+    "Pasted image 20240325180535.png",
+    "CS-144/index.md",
+    "C++/index.md",
+    "CS-61C/index.md",
+    "distributed system course by Martin Kleppmann/index.md",
     "CS-144/featured.png",
     "CMU-15445/index.md",
     "consistency & coherency/index.md",
-    "CS-144/index.md",
-    "CS-61C/index.md",
     "CS-61A/index.md",
     "CS-144/routing.jpg",
     "_index.md"

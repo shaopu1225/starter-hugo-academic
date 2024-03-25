@@ -401,6 +401,8 @@ CRC可以检测如下错误：
 
 #### Sliding window
 
+> 数据链路层和传输层都有滑动窗口协议，两者类似。
+
 Stop-and-Wait的问题在于主机的计算资源没有得到充分利用，空闲时间太多（在等待数据包in flight的过程），滑动窗口协议的特点如下：
 
 - Generalization of stop-and-wait: allow multiple un-acked segments
@@ -427,14 +429,18 @@ Stop-and-Wait的问题在于主机的计算资源没有得到充分利用，空�
 
 不论是发送端还是接收端端窗口，本质上都是缓冲区。
 
-滑动窗口协议可以分为两种，**Go-back-N**和**Selective-Repeat**。Go-back-N使用**cumulative acks**，即按照顺序从前往后ack，如果在当前窗口内有一个分组没有被接收，则之后到达的所有分组返回的ack仍然是那个丢失的分组，超时重传需要重传之后的所有分组；而**selective repeat**则不需要完全按照顺序ack，对于期望的分组（按照顺序无遗漏的）交付上层，如果期望的分组没有得到，就先缓存本地，这样之后超时重传也只需要重传丢失的那些分组即可，缓存的分组不需要再次ack。
+滑动窗口协议可以分为两种，**Go-back-N**和**Selective-Repeat**。
 
-> 所以，如果RWS为1，那么情况退化为go-back-n.
+- Go-back-N: 接收方简单丢弃所有到达的后续帧，而且针对这些丢弃的帧不返回ack。这种策略一般用于窗口大小为1的情形（因为相当于没有缓冲区）。这意味着如果在当前窗口内有一个分组没有被接收，则之后超时重传需要重传之后的所有分组。在该协议中，使用累计确认(`cumulative ack`)，即当帧n的ack到达时，我们认为前边的所有帧也已经被确认接收。
+- Selective-Repeat: 不需要完全按照顺序ack，对于期望的分组（按照顺序无遗漏的）交付上层，如果期望的分组没有得到，就先缓存本地，这样之后超时重传也只需要重传丢失的那些分组即可，缓存的分组不需要再次ack。selective-repeat方法常与否定策略结合使用，即当接收方检测到错误时，就发送一个否定确认(**NAK**)触发该帧的重传操作，而不需要等到相应的计时器超时。
 
-由于可能的超时重传的触发，滑动窗口协议对sequence space也有要求：
+需要注意的是，这两种方法在发生packet loss时，都采用duplicate ack的方法告诉发送端哪个packed发生丢失。
+
+由于可能的超时重传的触发，滑动窗口协议对**sequence space**也有要求：
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2024-02-23-154738.png" alt="image-20240223234737979" style="zoom:33%;" />
 
+对于go-back-N协议下的序列空间，我们只需要SWS+1个序列空间号，参见《Computer Networks》 (fifth version, P 184)。
 考虑RWS=SWS的情况，如果所有的数据包全部发出，但是所有的ack都没有传回，则我们需要让sequence space为RWS+SWS以便在下次接收所有数据包时知晓是所有旧的数据包还是新的下一组数据包：
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2024-02-23-155637.png" alt="image-20240223235636965" style="zoom:50%;" />
@@ -657,7 +663,7 @@ For each packet, the width of cwnd:
 
 ​						（达到右侧图的状态）
 
-有趣的是，在single flow的情况下，只要buffer足够大（原因接下来会说），`sending rate`其实是一个常量（因为每过一个RTT，cwnd增加1），这也表明了**拥塞控制和流量控制的不同在于拥塞控制试图控制outstanding packets on the links而不是发送端的发送速率**。
+有趣的是，在single flow的情况下，只要buffer足够大（原因接下来会说），`sending rate`其实是一个常量（因为每过一个RTT，cwnd增加1，而R=W/RTT），这也表明了**拥塞控制和流量控制的不同在于拥塞控制试图控制outstanding packets on the links而不是发送端的发送速率**。
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2024-02-28-193359.png" alt="image-20240229033359479" style="zoom:50%;" />
 
@@ -681,8 +687,8 @@ For each packet, the width of cwnd:
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2024-02-29-141143.png" alt="image-20240229221143778" style="zoom:50%;" />
 
-1. $$RTT\rightarrow 0 \Rightarrow R \rightarrow \infin$$​
-2. $$p\rightarrow 0 \Rightarrow R \rightarrow \infin$$
+1. $$RTT\rightarrow 0 \Rightarrow R \rightarrow \infty$$​
+2. $$p\rightarrow 0 \Rightarrow R \rightarrow \infty$$
 
 这意味着对于传输距离很远的线路（RTT很大），其throughput被限制在很小，这其实并不是我们想要的，所以这也是AIMD的一个缺点。
 
@@ -768,9 +774,9 @@ TCP除了维护一个拥塞窗口外，还维护一个流量控制窗口（该�
 
 $$SRTT=\alpha SRTT+(1-\alpha)R$$
 
-这里的$$\alpha$$被称为`EWMA(Exponentially Weighted Moving Average)`，指数加权移动平均。
+这里的$$\alpha$$被称为`EWMA(Exponentially Weighted Moving Average)`，指数加权移动平均。一般取alpha为7/8。
 
-一般取alpha为2，作为timeout的阈值。
+TCP使用timeout时间为$$2*RTT$$。
 
 但是这种方法存在的问题是没有加入方差因子，他对于RTT的变化不敏感，如果方差很小，那么他的预测显得过于保守，会浪费很多时间在等待已经timeout的packet；而如果方差很大，那么他的预测就显得过于激进，会尝试重传很多仍然在网络中的packets。
 
@@ -853,7 +859,7 @@ Daddr: 128.34.22.8
 
 现在的问题是saddr是否会被翻译？
 
-如果source address仍然保持B的private ip，这意味着B在收到A的ack时不会经过switch，因为其daddr是原本的saddr，它是B的private ip，所以B会收到一个来自10.0.0.101的数据包，这不是我们想要的结果。
+如果source address仍然保持B的private ip，这意味着B在收到A的ack时不会经过NAT转换，因为其daddr是原本的saddr，它是B的private ip，所以B会收到一个来自10.0.0.101的数据包，这不是我们想要的结果。
 
 所以B发给A的数据包，在经过NAT时也要被转换：
 
@@ -944,7 +950,7 @@ BitTorrent用于在对等系统中共享信息，它为每个内容提供商创�
 
 在有tracker的情况下，swarm内的机器通过联系tracker开始peer之间的通信。而如果没有tracker，则会使用**DHT**进行信息交换（P2P，如chord）。
 
-BitTorrent将一整个大文件分成N个pieces，方便TCP的cwnd增长到合适长度来增大throughput；同时他也会将一个大piece分成几个subpieces，从而允许他们在不同peers上被下载来减小latency。
+BitTorrent将一整个大文件分成N个比较大的pieces(256KB-1MB)，方便TCP的cwnd增长到合适长度来增大throughput；同时他也会将一个大piece分成几个subpieces，从而允许他们在不同peers上被下载来减小latency。
 
 Torrent文件中包含了每一个块的SHA-1哈希，用来检验数据的完整性。如果一个peer发出了太多不完整的，损坏的（可能是恶意的）pieces，则会被加入黑名单。
 
@@ -1254,7 +1260,7 @@ IP用D类IP地址来支持一对多的通信，IP地址224.0.0.0/24范围内的�
 
 为了解决这个问题，Ethernet也构建了一个spanning tree来限定packets forwarding的路径。
 
-首先，Ethernet通过如下方式转发packets：
+首先，Ethernet通过如下方式转发packets，当从port A接收到来自主机B的packet时，交换机就知道以后通往主机B的packet应当向port A转发。
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2024-03-06-061350.png" alt="image-20240306141350108" style="zoom:50%;" />
 
@@ -1291,9 +1297,18 @@ STP的工作流程如下所示：
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2024-03-06-080313.png" alt="image-20240306160313119" style="zoom:50%;" />
 
-在root bridge election之后，BPDUs仍然会继续被发送，确保系统可以应对动态变化，其中会携带如上所示的信息，来keep alive system。
+- **Hello**: Root bridge create and send hello messages
+- **MaxAge**: the max time interval others can stand for receiving MaxAge (TIMEOUT)
+- **Forward Delay**: timer set for the listening and learning state respectively
+在root bridge election之后，BPDUs仍然会继续被发送，确保系统可以应对动态变化，其中会携带如上所示的信息，来keep alive system。以下是port对应的几种状态：
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2024-03-06-080327.png" alt="image-20240306160327107" style="zoom:50%;" />
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2024-03-25-100613.png" alt="image-20240325180612923" style="zoom:50%;" />
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2024-03-25-102128.png" alt="image-20240325182127447" style="zoom:50%;" />
+
+> source: https://www.jannet.hk/spanning-tree-protocol-stp-zh-hant/#Listening
 
 **root port**：距离root bridge最近的port
 
@@ -1301,7 +1316,7 @@ STP的工作流程如下所示：
 
 其余所有port均被阻塞，注意对于root bridge，不存在被阻塞的端口。
 
-除了root port和designated port之外的port都不会负责forwarding packets，但他们还会根据需要继续发送和接收BPDUs，以此应对系统可能出现的动态变化：比如没有接收到root bridge的消息时，或者系统中有新的更低sender ID的交换机加入。
+除了root port和designated port之外的port都不会负责forwarding packets，但他们还会继续接收BPDUs，以此应对系统可能出现的动态变化：比如没有接收到root bridge的消息时，或者系统中有新的更低sender ID的交换机加入。
 
 再后来，STP逐渐被RSTP(可以更快的收敛)和SPB替代：
 
