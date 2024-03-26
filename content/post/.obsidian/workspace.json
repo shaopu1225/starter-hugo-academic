@@ -13,8 +13,8 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "CS-144/index.md",
-                "mode": "source",
+                "file": "C++/index.md",
+                "mode": "preview",
                 "source": false
               }
             }
@@ -85,7 +85,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "CS-144/index.md",
+                "file": "C++/index.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -102,7 +102,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "CS-144/index.md",
+                "file": "C++/index.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -125,7 +125,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "CS-144/index.md"
+                "file": "C++/index.md"
               }
             }
           }
@@ -148,8 +148,8 @@
   },
   "active": "41f679117453cf84",
   "lastOpenFiles": [
-    "Pasted image 20240325180535.png",
     "CS-144/index.md",
+    "Pasted image 20240325180535.png",
     "C++/index.md",
     "CS-61C/index.md",
     "distributed system course by Martin Kleppmann/index.md",

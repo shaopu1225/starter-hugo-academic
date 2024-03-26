@@ -1,7 +1,7 @@
 ---
 title:		CS 106L
 subtitle:	CS 106L
-summary:	notes of 106L Standard C++ Programming
+summary:	notes of 106L Standard cpp Programming
 date:		2021-11-07
 lastmod:	2023-08-31
 author:		shaopu
@@ -10,14 +10,14 @@ draft: 		false
 type:		book
 tags:
     - course
-    - C++
+    - cpp
 
 categories:
     - CS course notes
     - Programming Language
 ---
 
-本篇文章是我学习*CS 106L*课程的笔记记录，但本文中大部分内容来自于学习过程中查阅的各种*blog*以及*StackOverflow*和**C++**的标准文档，作为个人日后查询、补充和深入学习的手册使用。此外，我将2019秋季Stanford的CS 106L作业发布在我的[Github仓库](https://github.com/SongShaopu1998/Stanford-CS-106L)，按照课程要求，设置为私人仓库。
+本篇文章是我学习*CS 106L*课程的笔记记录，但本文中大部分内容来自于学习过程中查阅的各种*blog*以及*StackOverflow*和**cpp**的标准文档，作为个人日后查询、补充和深入学习的手册使用。此外，我将2019秋季Stanford的CS 106L作业发布在我的[Github仓库](https://github.com/SongShaopu1998/Stanford-CS-106L)，按照课程要求，设置为私人仓库。
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/202111091826467.png" alt="image-20211109182644300" style="zoom:50%;" />
 
@@ -71,7 +71,7 @@ categories:
 
 #### about ">>"
 
-我们可以指定类型，之后使用`>>`操作符将内容读入指定类型的变量中。在C++官方[文档页面](https://www.cplusplus.com/reference/istream/istream/operator%3E%3E/)上，对这一操作进行了详细的描述，该运算符被多次重载用以接受以下三种参数：
+我们可以指定类型，之后使用`>>`操作符将内容读入指定类型的变量中。在cpp官方[文档页面](https://www.cplusplus.com/reference/istream/istream/operator%3E%3E/)上，对这一操作进行了详细的描述，该运算符被多次重载用以接受以下三种参数：
 
 - `arithmetic types`
 - `stream buffers`
@@ -89,7 +89,7 @@ categories:
 
 > 需要注意的是，`End-Of-File`并不是什么存在于文件末尾的字符，`EOF`是定义于标准库内的一个宏(`macro`):
 >
-> ```c++
+> ```cpp
 > #define EOF (-1)
 > ```
 >
@@ -101,7 +101,7 @@ categories:
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/202111081445541.png" alt="image-20211108144549477" style="zoom:50%;" />
 
-当内置错误标志为`fail`时，我们也可以利用C++库的从`istream object&`到`bool`的隐式转换`ss >> ch`作为`!ss.fail()`的替代，之后的`getline()`函数也可以利用`null pointer->bool`的转换:
+当内置错误标志为`fail`时，我们也可以利用cpp库的从`istream object&`到`bool`的隐式转换`ss >> ch`作为`!ss.fail()`的替代，之后的`getline()`函数也可以利用`null pointer->bool`的转换:
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/202111102311395.png" alt="image-20211110231100308" style="zoom:50%;" />
 
@@ -109,7 +109,7 @@ categories:
 
 在本课的`stringToInteger`函数中，我们见到如下使用方式：
 
-```c++
+```cpp
 int stringToInteger(const string& str) {
     istringstream iss(str);
     int result;
@@ -159,7 +159,7 @@ stringToInteger("lol");
 
 这是因为`string`类本身也对`extraction operator`进行了重载：
 
-```c++
+```cpp
 istream& operator>> (istream& is, string& str);
 ```
 
@@ -175,7 +175,7 @@ istream& operator>> (istream& is, string& str);
 
 下边来看这样两个例子：
 
-1. ```c++
+1. ```cpp
    string a = " 12 3";
    stringstream iss(a);
    char b, c;
@@ -184,7 +184,7 @@ istream& operator>> (istream& is, string& str);
    // result: b:  c: 1
    ```
 
-   ```c++
+   ```cpp
    string a = " 12 3";
    stringstream iss(a);
    char b, c;
@@ -193,7 +193,7 @@ istream& operator>> (istream& is, string& str);
    // result: b:1  c: 2
    ```
 
-2. ```c++
+2. ```cpp
    string a = " 12 3";
    stringstream iss(a);
    string b, c;
@@ -202,7 +202,7 @@ istream& operator>> (istream& is, string& str);
    // result: b:  c: 
    ```
 
-   ```c++
+   ```cpp
    string a = " 12 3";
    stringstream iss(a);
    string b, c;
@@ -223,7 +223,7 @@ istream& operator>> (istream& is, string& str);
 
 > "For standard streams, the skipws flag **is set** on initialization."
 
-也就是说，在默认情况下初始化的结果为设置了`skipws`，所以所有空白字符都会被读取之后跳过，直到我们又发现了一个**非空白字符**。如此一来，上边例子的结果就好理解了。需要注意的是，在C++中，对于所有的`formatted input`（即可以格式化成我们需要的类型的，比如C中的`prinf, scanf`，C++中使用`>>`操作的），默认都是`noskipws=false`，也就是说会**跳过空白字符**；而对于所有的`unformatted input`（比如`getchar(char), getline(string)`）均设置为`noskipws=true`。
+也就是说，在默认情况下初始化的结果为设置了`skipws`，所以所有空白字符都会被读取之后跳过，直到我们又发现了一个**非空白字符**。如此一来，上边例子的结果就好理解了。需要注意的是，在cpp中，对于所有的`formatted input`（即可以格式化成我们需要的类型的，比如C中的`prinf, scanf`，cpp中使用`>>`操作的），默认都是`noskipws=false`，也就是说会**跳过空白字符**；而对于所有的`unformatted input`（比如`getchar(char), getline(string)`）均设置为`noskipws=true`。
 
 > 关于格式化输入与非格式化输入，我是这么理解的，格式化输入意味着我们可以把输入的数据变成我们想要的类型，比如当我们使用`>>`操作符时，我们可以读入整型，也可以读入一个字符串；但是非格式化输入只能读入`rawText type`，好比`geline(string)`我们输入了一个字符串那么接受类型就是一个字符串.
 
@@ -243,7 +243,7 @@ istream& operator>> (istream& is, string& str);
 
 需要注意的是，在`streamoff`中，`n`的值可正可负。常见的使用方法如下：
 
-```c++
+```cpp
 fpos = oss.tellp() + streamoff(3);
 oss.seekp(pos);
 // or
@@ -280,13 +280,13 @@ oss.seekp(streamoff(1), stringstream::cur);
 
 函数原型：
 
-```c++
+```cpp
 istream& ignore (streamsize n = 1, int delim = EOF);
 ```
 
 注意到这种特殊的使用方法，可以帮助我们忽略掉当前`stream buffer`中所有的数据，直到**eof**：
 
-```c++ 
+```cpp 
 con.ignore(numeric_limits<streamsize>::max(), ‘\n’);
 ```
 
@@ -300,7 +300,7 @@ con.ignore(numeric_limits<streamsize>::max(), ‘\n’);
 
 在文件读取中，如果我们读到了文件末尾，那么`getline`会设置一个`eofbit`，但是此时并不会设置`failbit`，而在继续的下一次读取中，因为我们没有读取到任何内容，**根据failbit**的定义，`sentry object`会置一个`failbit`，借助这一特点，我们在实际使用中常把读取循环写作如下形式而非`while(!input.fail())`，进而避免向数据结构中输入最后一次读取的`garbage value`：
 
-```c++
+```cpp
 ifstream file(filename);
 while(true) {
     string line;
@@ -312,7 +312,7 @@ while(true) {
 }
 ```
 
-> 我们可以通过在`char*(c-string)`后加一个`s`字母的方式，将其转化为`C++ string`
+> 我们可以通过在`char*(c-string)`后加一个`s`字母的方式，将其转化为`cpp string`
 
 ## type deduction
 
@@ -322,11 +322,11 @@ while(true) {
 
 ### pair
 
-在C++中，传统的返回多个值的方法是使用`reference parameters`，但问题在于除非我们查看函数定义，否则引用参数并不明显。在C++11中提供了`pair`或者`tuple`，我们可以使用他们组合多个返回值：
+在cpp中，传统的返回多个值的方法是使用`reference parameters`，但问题在于除非我们查看函数定义，否则引用参数并不明显。在cpp11中提供了`pair`或者`tuple`，我们可以使用他们组合多个返回值：
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/202111091512437.png" alt="image-20211109151222334" style="zoom:50%;" />
 
-```c++
+```cpp
 std::pair<std::string, std::string> f(std::pair<std::string, std::string> p)
 {
     return {p.second, p.first}; // list-initialization in return statement
@@ -339,9 +339,9 @@ std::pair<std::string, std::string> f(std::pair<std::string, std::string> p)
 
 ### structured binding
 
-在C++17中，与Python类似，我们可以做`unpack`（`structured binding`）：
+在cpp17中，与Python类似，我们可以做`unpack`（`structured binding`）：
 
-```c++
+```cpp
 auto [min, max] = findPriceRange(dist);
 ```
 
@@ -349,7 +349,7 @@ auto [min, max] = findPriceRange(dist);
 
 我们还可以对引用使用`structured binding`:
 
-```c++
+```cpp
 void transformToDST(vector<Course>& courses) { 
     for (auto& [code, start, end, instructors] : courses) { 
         start++; 
@@ -358,7 +358,7 @@ void transformToDST(vector<Course>& courses) {
 }
 ```
 
-```c++
+```cpp
 void print_map(std::string_view comment, const std::map<std::string, int>& m)
 {
     std::cout << comment;
@@ -371,7 +371,7 @@ void print_map(std::string_view comment, const std::map<std::string, int>& m)
 
 ### Aggregate initialization
 
-随着C++标准的不断更新，初始化的方式愈发多样化。`aggregate initialization`是一种`list-initilization`，在**C++20**中也被叫做`direct initialization`. 他应用于`arrays`以及`class type`，比如**结构体**或者**联合**，但是在使用时有一些特殊要求，可参见[文档](https://en.cppreference.com/w/cpp/language/aggregate_initialization)。
+随着cpp标准的不断更新，初始化的方式愈发多样化。`aggregate initialization`是一种`list-initilization`，在**cpp20**中也被叫做`direct initialization`. 他应用于`arrays`以及`class type`，比如**结构体**或者**联合**，但是在使用时有一些特殊要求，可参见[文档](https://en.cppreference.com/w/cpp/language/aggregate_initialization)。
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/202111111743654.png" alt="image-20211111174324498" style="zoom:50%;" />
 
@@ -385,7 +385,7 @@ void print_map(std::string_view comment, const std::map<std::string, int>& m)
 
 另一个使用`uniform intialization`的例子是我们将要初始化一个`std::pair`：我们可以选择使用`{}`语法初始化所有部分，或者初始化一部分：
 
-```c++
+```cpp
 foo({ {}, {} }); // OK: call default constructor on both parts
 foo({ key, {} }); // OK: call defualt constructor on the second part
 foo({ key1, key2 }); // OK
@@ -395,9 +395,9 @@ foo({ key1, key2 }); // OK
 
 
 
-**当我们尝试使用`aggregate initialization`的方法初始化结构体等`class type`时，在C++11中被做了`不允许在存在默认初始化参数的情况下使用`的限制，这一限制条件在C++14中被取消。**：
+**当我们尝试使用`aggregate initialization`的方法初始化结构体等`class type`时，在cpp11中被做了`不允许在存在默认初始化参数的情况下使用`的限制，这一限制条件在cpp14中被取消。**：
 
-```c++
+```cpp
 struct A {
   string str;
   int n = 42;
@@ -410,7 +410,7 @@ A{.m=21}  // Initializes str with {}, which calls the default constructor
 
 **文档截图中的初始化方案3、4被称为`designated initilizers`，这种初始化方法要保证所有元素的初始化顺序与定义顺序一样，但是我们可以缺省某个参数：**
 
-```c++
+```cpp
 struct A { int x; int y; int z; };
 A a{.y = 2, .x = 1}; // error; designator order does not match declaration order
 A b{.x = 1, .z = 2}; // ok, b.y initialized to 0
@@ -418,7 +418,7 @@ A b{.x = 1, .z = 2}; // ok, b.y initialized to 0
 
 我们可以使用`designated initializers`来初始化**联合**，但是**union只允许我们提供一个初始化参数成员：**
 
-```c++
+```cpp
 union u { int a; const char* b; };
 u f = { .b = "asdf" };         // OK, active member of the union is b
 u g = { .a = 1, .b = "asdf" }; // Error, only one initializer may be provided
@@ -479,7 +479,7 @@ u g = { .a = 1, .b = "asdf" }; // Error, only one initializer may be provided
 
 `map`的迭代器比较特殊，它指向一个`pair`对象，所以我们可以使用`a.first`和`a.second`获取键与值：
 
-```c++
+```cpp
 map<int, int> m;
 map<int, int>::iterator i = m.begin();
 map<int, int>::iterator end = m.end();
@@ -489,7 +489,7 @@ while(i != end) {
 }
 ```
 
-在C++20之前，如果我们想要查找容器中是否存在某个键，那么需要调用`find`或者`end`方法，而在C++20中，我们只需要调用`contains`即可。
+在cpp20之前，如果我们想要查找容器中是否存在某个键，那么需要调用`find`或者`end`方法，而在cpp20中，我们只需要调用`contains`即可。
 
 > 如果`find`成功，则`iterator`指向对应的元素，否则指向`end`. `count`方法通过调用`find`实现，所以`find`方法的速度更快.
 
@@ -520,7 +520,7 @@ while(i != end) {
 
 `input iterators`只能作为右值（`rvalue`）被解引用：
 
-```c++
+```cpp
 int val = *itr;
 ```
 
@@ -530,7 +530,7 @@ int val = *itr;
 
 它的应用条件与`input iterators`相同，但是它只能作为左值（`lvalue`）被解引用：
 
-```c++
+```cpp
 *itr = 12;
 ```
 
@@ -544,7 +544,7 @@ int val = *itr;
 
 承接`forward iterators`，但是可以做`--`操作：
 
-```c++
+```cpp
 vector<int>::iterator itr = v.begin();
 --itr;
 ```
@@ -559,9 +559,9 @@ vector<int>::iterator itr = v.begin();
 
 关于迭代器类型，补充以下一些内容：
 
-除了上述提到的5种基本类型的迭代器，**C++**后来新增了一种基本迭代器类型：`Contiguous Iterator`，这种迭代器类型在`randomAccess Iterators`的基础上保证了**其中的数据在内存必须连续存储**。
+除了上述提到的5种基本类型的迭代器，**cpp**后来新增了一种基本迭代器类型：`Contiguous Iterator`，这种迭代器类型在`randomAccess Iterators`的基础上保证了**其中的数据在内存必须连续存储**。
 
-在[**C++20**](https://en.cppreference.com/w/cpp/iterator)中，根据新的关键字`concept`以及`requires`对迭代器类型根据新的系统设计了一套定义，但是基本的类型是相似的；
+在[**cpp20**](https://en.cppreference.com/w/cpp/iterator)中，根据新的关键字`concept`以及`requires`对迭代器类型根据新的系统设计了一套定义，但是基本的类型是相似的；
 
 > 我们可以简单地将这两个关键字的功能理解为：为模板参数制定一些限制，使得在*编译*阶段就能够进行`evaluation`。应用他们的主要优点是可以得到更加清晰地编译器报错。这里不去深究，[这篇文章](https://www.cppstories.com/2021/concepts-intro/)写的较为清楚。
 
@@ -569,13 +569,13 @@ vector<int>::iterator itr = v.begin();
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/202111101555478.png" alt="image-20211110155516376" style="zoom: 33%;" />
 
-新定义的迭代器类型除了`output_iterator`是直接在`input_or_output_iterator`基础上增加了写入功能之外，其余的迭代器类型均[继承](https://en.cppreference.com/w/cpp/concepts/derived_from)自**C++20**之前的迭代器类型，比如对于`input iterator`:
+新定义的迭代器类型除了`output_iterator`是直接在`input_or_output_iterator`基础上增加了写入功能之外，其余的迭代器类型均[继承](https://en.cppreference.com/w/cpp/concepts/derived_from)自**cpp20**之前的迭代器类型，比如对于`input iterator`:
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/202111101600970.png" alt="image-20211110160016902" style="zoom:50%;" />
 
 #### What is single-pass?
 
-什么是`single-pass`？为什么只能`single-pass`？**C++标准库**中提到：
+什么是`single-pass`？为什么只能`single-pass`？**cpp标准库**中提到：
 
 > **For input iterators, a == b does not imply ++a == ++b.** (*Equality does not guarantee the substitution property or referential transparency.*) Algorithms on input iterators should never attempt to pass through the same iterator twice. They should be single pass algorithms. Value type T is not required to be an Assignable type (23.1). These algorithms can be used with istreams as the source of the input data through the istream_iterator class.
 
@@ -601,11 +601,11 @@ vector<int>::iterator itr = v.begin();
 
 #### Write our own iterator?
 
-在C++17之前的版本中，如果我们想给自己的类写一个`iterator`，那么一般的方法是继承`std::iterator`的类模板，并在类模板中指定所谓的`iterator_category`：
+在cpp17之前的版本中，如果我们想给自己的类写一个`iterator`，那么一般的方法是继承`std::iterator`的类模板，并在类模板中指定所谓的`iterator_category`：
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/202111101732699.png" alt="image-20211110173203619" style="zoom:50%;" />
 
-迭代器标签关联着之前所述的迭代器实体。但是自**C++17**起，`std::iterator`的类模板遭到舍弃，[详情参见](https://stackoverflow.com/questions/37031805/preparation-for-stditerator-being-deprecated)。所以现在，我们只能手写迭代器，具体可以看[这里](https://segmentfault.com/a/1190000040879971)。
+迭代器标签关联着之前所述的迭代器实体。但是自**cpp17**起，`std::iterator`的类模板遭到舍弃，[详情参见](https://stackoverflow.com/questions/37031805/preparation-for-stditerator-being-deprecated)。所以现在，我们只能手写迭代器，具体可以看[这里](https://segmentfault.com/a/1190000040879971)。
 
 > 在这里，`iterator_traits`是一个`meta-function`，返回的是根据给入参数决定的迭代器的`type`（通过`::iterator_category`），也即上图中的各种`iterator_tag`，这些`tags`绑定着一些同名迭代器类实体，我们可以利用这些类别构造我们自己的函数，在下方模板一章节的最后一个例子中有提到（来自于*Stanford CS 106L Fa2020 lecture*）。
 
@@ -615,7 +615,7 @@ vector<int>::iterator itr = v.begin();
 
 需要注意的是，我们应当把该类也声明做友元，因为我们可能会获取它的成员们：
 
-```c++
+```cpp
 friend iterator_of_hashmap<HashMap, !Const>;
 ```
 
@@ -627,13 +627,13 @@ friend iterator_of_hashmap<HashMap, !Const>;
 
 这就是为什么在代码中我们需要诸如：
 
-```c++
+```cpp
 using node_pointer = std::conditional_t<Const, const node*, node*>;
 ```
 
 ##### iterator – basic requirement
 
-```c++
+```cpp
 using difference_type = std::ptrdiff_t;
 using value_type = std::conditional_t<Const, const _value_type, _value_type>;
 using pointer = std::conditional_t<Const, const _value_type*, _value_type*>;
@@ -643,9 +643,9 @@ using iterator_category = std::forward_iterator_tag;
 
 我们必须添加这些以满足程序对`iterator`类设计的基本要求，同时根据`iterator_category`提供**必要的运算符重载**，需要注意的是其中前置`++`与后置`++`的实现方法（基本是固定套路），参看我的[Github repository](https://github.com/SongShaopu1998/Stanford-CS-106L/blob/main/Assignment3-HashMap/hashmap_iterator.h). 
 
-根据*Mastering the C++17 STL*这本书的设计，我们还提供了一个`conversion operator`，允许迭代器从`iterator`转型到`const_iterator`：
+根据*Mastering the cpp17 STL*这本书的设计，我们还提供了一个`conversion operator`，允许迭代器从`iterator`转型到`const_iterator`：
 
-```c++
+```cpp
 /** a conversion operator */
 operator iterator_of_hashmap<HashMap, true>() const {
     return iterator_of_hashmap<HashMap, true>{_buckets_array, _ptr, curr_bucket};
@@ -666,7 +666,7 @@ operator iterator_of_hashmap<HashMap, true>() const {
 
 函数模板的基本形式是：
 
-```c++
+```cpp
 template<typename T>
 T getInteger(const string& prompt, const string& reprompt) {
     while (true) {
@@ -688,7 +688,7 @@ T getInteger(const string& prompt, const string& reprompt) {
 
 e.g.
 
-```c++
+```cpp
 template<class T, class Container = std::vector<T>>
 class Priority_Q {
   // do something  
@@ -709,13 +709,13 @@ class Priority_Q {
 - A pointer or reference to a function
 - A pointer or reference to a class member function
 - std::nullptr_t
-- A floating point type (since C++20)
+- A floating point type (since cpp20)
 
 对于该类型的参数，我们需要注意以下几点：
 
 1.  **The top-level `cv-qualifiers` on the template-parameter are ignored** when determining its type
 
-```c++
+```cpp
 // this const will be ignored
 template<const int k>
 void foo() {
@@ -723,9 +723,9 @@ void foo() {
 }
 ```
 
-2. When the name of a non-type template parameter is used in an expression within the body of the class template, it is an unmodifiable [prvalue](https://en.cppreference.com/w/cpp/language/value_category) unless its type was an lvalue reference type, or unless its type is a class type (since C++20).
+2. When the name of a non-type template parameter is used in an expression within the body of the class template, it is an unmodifiable [prvalue](https://en.cppreference.com/w/cpp/language/value_category) unless its type was an lvalue reference type, or unless its type is a class type (since cpp20).
 
-```c++
+```cpp
 template <int N>
 void f()
 {
@@ -738,7 +738,7 @@ void f()
 
 > 因为模板的匹配是在编译的时候完成的，所以实例化模板的时候所使用的参数，也必须要在编译期就能确定。
 
-```c++
+```cpp
 template <int N>
 void f()
 {
@@ -757,9 +757,9 @@ int main() {
 
 2. `type template parameter`
 
-这类参数包括使用`typename`与`class`(即分别对应了函数模板与类模板的两种`type-parameter-key`)，在**C++20**中还提出了使用`constrained type template`:
+这类参数包括使用`typename`与`class`(即分别对应了函数模板与类模板的两种`type-parameter-key`)，在**cpp20**中还提出了使用`constrained type template`:
 
-```c++
+```cpp
 template<typename... Ts> concept C2 = true; // variadic concept
 template<C2... T> struct s3;      // constraint-expression is (C2<T> && ...)
 ```
@@ -768,7 +768,7 @@ template<C2... T> struct s3;      // constraint-expression is (C2<T> && ...)
 
 模板模板参数：
 
-```c++
+```cpp
 // two type template parameters and one template template parameter:
 template<typename K, typename V, template<typename> typename C = my_array>
 class Map
@@ -798,7 +798,7 @@ class Map
 
 这些限定条件意味着如果我们在调用函数时给出了不恰当的参数，那么该模板函数会报出一些非常凌乱的错误…
 
-在**C++20**中给出了新的关键字`concepts`与`requires`，也就是在之前我们提到过用于重写`iterator`的两个关键字，他们可以帮助我们在编译阶段就检查出参数错误，将报错的位置从函数主体转移到这两个关键字的位置上：
+在**cpp20**中给出了新的关键字`concepts`与`requires`，也就是在之前我们提到过用于重写`iterator`的两个关键字，他们可以帮助我们在编译阶段就检查出参数错误，将报错的位置从函数主体转移到这两个关键字的位置上：
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/202111131442975.png" alt="image-20211113144241875" style="zoom:50%;" />
 
@@ -831,7 +831,14 @@ int main() {
 
 根据[官方文档](https://en.cppreference.com/w/cpp/language/overload_resolution),为了编译一个函数调用，程序首先会进行`name lookup`，这一步是将程序中出现的名字与引入它的**声明**联系起来，比如对于如下语句，程序正是通过`name lookup`的方式来解析这条语句中出现的各个名字：
 
-```c++
+> For example, to compile [std::cout](http://en.cppreference.com/w/cpp/io/cout) << [std::endl](http://en.cppreference.com/w/cpp/io/manip/endl);, the compiler performs:
+>
+> - unqualified name lookup for the name `std`, which finds the declaration of namespace std in the header [<iostream>](https://en.cppreference.com/w/cpp/header/iostream)
+> - qualified name lookup for the name `cout`, which finds a variable declaration in the namespace `std`
+> - qualified name lookup for the name `endl`, which finds a function template declaration in the namespace `std`
+> - both [argument-dependent lookup](https://en.cppreference.com/w/cpp/language/adl) for the name `operator<<`, which finds multiple function template declarations in the namespace `std`, and qualified name lookup for the name std::ostream::operator<<, which finds multiple member function declarations in class [std::ostream](https://en.cppreference.com/w/cpp/io/basic_ostream).
+
+```cpp
 std::cout << std::endl;
 ```
 
@@ -851,7 +858,7 @@ std::cout << std::endl;
 
 需要注意的是，如果作用域解析符`::`左侧没有东西，那么程序会默认在`global namespace scope`或者由`using`引入的命名空间中进行查找：
 
-```c++
+```cpp
 #include <iostream>
 int main() {
   struct std{};
@@ -866,7 +873,7 @@ int main() {
 
 该示例来自于官方文档：
 
-```c++
+```cpp
 #include <iostream>
 int main()
 {
@@ -895,7 +902,7 @@ int main()
 
 这一机制以及上一节提到的`ADL`，让我们使用`template operator`成为可能，因为在使用`template operator`时，我们无法显式指定所用的模板参数的类型：
 
-```c++
+```cpp
 #include <iostream>
  
 int main() 
@@ -957,7 +964,7 @@ std::string str(T t) {
 
 ##### How to leverage SFINAE?
 
-为了解决这个问题，**C++11/14/17/20**提出了多种方案：
+为了解决这个问题，**cpp11/14/17/20**提出了多种方案：
 
 ###### [Tag Dispatching](https://www.cppstories.com/2016/02/notes-on-c-sfinae/#improved-code)
 
@@ -967,7 +974,7 @@ std::string str(T t) {
 
 > **std::enable_if** can be used as an additional function argument (not applicable to operator overloads), as a return type (not applicable to constructors and destructors), or as a class template or function template parameter.
 
-[这一语法](https://en.cppreference.com/w/cpp/types/enable_if)自**C++11**提出，但当时的写法是`enable_if`，在**C++14/17**中，提出了`enable_if_t`.
+[这一语法](https://en.cppreference.com/w/cpp/types/enable_if)自**cpp11**提出，但当时的写法是`enable_if`，在**cpp14/17**中，提出了`enable_if_t`.
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/202111132147605.png" alt="image-20211113214738450" style="zoom:50%;" />
 
@@ -980,9 +987,9 @@ template <class T>
 typename std::enable_if<std::is_arithmetic<T>::value, T>::type
 ```
 
-或者参看文档中的`alias`–`enable_if_t`的定义时，如果其不具备成员`type`但是我们却使用了`::type`，那么编译就会出错，并使用`SFINAE`机制处理。在**C++14**及以后的版本中，上述代码可被简化为：
+或者参看文档中的`alias`–`enable_if_t`的定义时，如果其不具备成员`type`但是我们却使用了`::type`，那么编译就会出错，并使用`SFINAE`机制处理。在**cpp14**及以后的版本中，上述代码可被简化为：
 
-```c++
+```cpp
 template <class T>
 typename std::enable_if_t<std::is_arithmetic_v<T>, T> 
 ```
@@ -991,7 +998,7 @@ typename std::enable_if_t<std::is_arithmetic_v<T>, T>
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/202111132152195.png" alt="image-20211113215251103" style="zoom:50%;" />
 
-`type traits`在**编译阶段**用以确定模板特征和属性。在**C++14**中也提出了类似于`is_arithmetic_v`的形式（原本的`value`当`T`为`arithmetic type`是返回`true`，反之`false`）
+`type traits`在**编译阶段**用以确定模板特征和属性。在**cpp14**中也提出了类似于`is_arithmetic_v`的形式（原本的`value`当`T`为`arithmetic type`是返回`true`，反之`false`）
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/202111132155450.png" alt="image-20211113215505370" style="zoom:50%;" />
 
@@ -1015,7 +1022,7 @@ enable_if_t<!is_convertible_v<T, string>, string> strOld(T t) {
 
 `enable_if`除了可以放在返回值的位置上以外，还可以直接使用在模板参数、函数参数中，或者在模板偏特化中出现，它的使用方式十分灵活，具体可以看官方文档：
 
-```c++
+```cpp
 // 2. the second template argument is only valid if T is an integral type:
 template < class T,
            class = typename std::enable_if<std::is_integral<T>::value>::type>
@@ -1042,9 +1049,9 @@ class A<T, typename std::enable_if<std::is_floating_point<T>::value>::type> {
 
 ###### if constexpr
 
-在**C++17**中，我们可以将`if conxtexpr statement`使用在模板中，起到与`enable_if_t`相同的作用：
+在**cpp17**中，我们可以将`if conxtexpr statement`使用在模板中，起到与`enable_if_t`相同的作用：
 
-```c++
+```cpp
 template <typename T>
 auto get_value(T t) {
     if constexpr (std::is_pointer_v<T>)
@@ -1070,7 +1077,7 @@ concept Hashable = requires(T a) {
 
 - requires clauses
 
-```c++
+```cpp
 template<typename T>
 void f(T&&) requires Eq<T>; // can appear as the last element of a function declarator
  
@@ -1080,14 +1087,14 @@ T add(T a, T b) { return a + b; }
 
 - requires expressions
 
-```c++
+```cpp
 template<typename T>
 concept Addable = requires (T x) { x + x; }; // requires-expression
 ```
 
 - simple requirements
 
-```c++
+```cpp
 template<typename T>
 concept Addable =
 requires (T a, T b) {
@@ -1099,7 +1106,7 @@ requires (T a, T b) {
 
 - Type requirements
 
-```c++
+```cpp
 template<typename T> using Ref = T&;
 template<typename T> concept C =
 requires {
@@ -1117,9 +1124,9 @@ requires {
 
 ###### Abbreviated function template
 
-自**C++20**始，提出了`Abbreviated function template`的做法，即使用`placeholder types(auto, concept auto)`出现在函数声明或者函数模板声明中：
+自**cpp20**始，提出了`Abbreviated function template`的做法，即使用`placeholder types(auto, concept auto)`出现在函数声明或者函数模板声明中：
 
-```c++
+```cpp
 void f1(auto); // same as template<class T> void f(T)
 void f2(C1 auto); // same as template<C1 T> void f2(T), if C1 is a concept
 void f3(C2 auto...); // same as template<C2... Ts> void f3(Ts...), if C2 is a concept
@@ -1166,7 +1173,7 @@ constexpr bool close_enough20(std::integral auto a, std::integral auto b) {
 
 在做`hashmap`作业时，我们需要将自己实现的`iterator class`作为友元声明到`container`也即`hashmap`类中，我们有两种方法来实现这一声明操作：
 
-```c++
+```cpp
 template<typename T>
 class foo{
     template<typename U>
@@ -1178,14 +1185,14 @@ class foo{
 
 如此一来，不论`T`被实例化为什么类型，任何类型的`foo_1`类都是`foo`的友元。需要注意的是**类模板的声明方式**，我们不可以写出这样的语法：
 
-```c++
+```cpp
 template<typename U>
 friend class foo_1<U>;
 ```
 
 或者我们也可以这样声明，这也是`hashmap`中我们可以做的（因为只需要这么做就足够了）：
 
-```c++
+```cpp
 template<typename T>
 class foo{
     friend class foo_1<T>;
@@ -1196,7 +1203,7 @@ class foo{
 
 我们可以在友元处做模板特化（`Template specialization`），需要注意的是，**模板友元**（`Template friends`）不允许我们做**模板偏特化**，但是我们可以做**模板全特化**：
 
-```c++
+```cpp
 template<class T> class A {}; // primary
 template<class T> class A<T*> {}; // partial,因为此时T*仍然带有泛型T
 template<> class A<int> {}; // full, int已经脱离T了，被“完全特化”了，所以模板参数中也不需要填东西
@@ -1214,7 +1221,7 @@ class X {
 
 与模板友元类类似，我们可以这样声明：
 
-```c++
+```cpp
 template <typename T>
 class Test {
    template <typename U>      // all instantiations of this template are my friends
@@ -1234,7 +1241,7 @@ std::ostream& operator<<( std::ostream& o, const Test<T>& ) {
 
 > 这两种声明**不允许**我们将函数定义放在类外，否则编译器无法找到模板函数的定义
 
-```c++
+```cpp
 template <typename T>
 class Test {
    friend std::ostream& operator<<( std::ostream& o, const Test& t ) {
@@ -1249,7 +1256,7 @@ class Test {
 
 > or the function template has to be declared as a template before the class body, in which case the friend declaration within `Foo<T>` can refer to the full specialization of `operator<<` for its `T`:
 
-```c++
+```cpp
 // Forward declare both templates:
 template <typename T> class Test;
 template <typename T> std::ostream& operator<<( std::ostream&, const Test<T>& );
@@ -1273,7 +1280,7 @@ std::ostream& operator<<( std::ostream& o, const Test<T>& t ) {
 
 ### Template meta-programming
 
-本部分内容来自于`Stanford CS 106L Fa2020`的`guest lecture`，以及[C++ Template Tutorial](https://sg-first.gitbooks.io/cpp-template-tutorial/content/TMP_ji_chu_md.html)和**C++**官方文档。
+本部分内容来自于`Stanford CS 106L Fa2020`的`guest lecture`，以及[cpp Template Tutorial](https://sg-first.gitbooks.io/cpp-template-tutorial/content/TMP_ji_chu_md.html)和**cpp**官方文档。
 
 在学习了一系列基本关于模板的基础知识以及先前关于`iterator`的内容后，对模板元编程（`Template meta-pragramming`）做一下浅显的了解和认识。在这一章节，也会对先前没有提到的模板特化（`Template Specialization`）做一些介绍。
 
@@ -1281,7 +1288,7 @@ std::ostream& operator<<( std::ostream& o, const Test<T>& t ) {
 
 > 元（meta）无论在中文还是英文里，都是个很“抽象（abstract）”的词。因为它的本意就是“抽象”。元编程，也可以说就是“编程的抽象”。用更好理解的说法，元编程意味着你撰写一段程序A，程序A会运行后生成另外一个程序B，程序B才是真正实现功能的程序。那么这个时候程序A可以称作程序B的元程序，撰写程序A的过程，就称之为“元编程”。
 >
-> 我们的目的，是找出程序之间的相似性，进行“元编程”。而在C++中，元编程的手段，可以是宏，也可以是模板。
+> 我们的目的，是找出程序之间的相似性，进行“元编程”。而在cpp中，元编程的手段，可以是宏，也可以是模板。
 
 #### Template Specialization
 
@@ -1301,7 +1308,7 @@ std::ostream& operator<<( std::ostream& o, const Test<T>& t ) {
 
 #### Template Specialization Examples
 
-```c++
+```cpp
 // primary template
 template <typename T> class TypeToID
 {
@@ -1318,7 +1325,7 @@ public:
 
 需要注意的是，在模板特化时，如果我们特化的类型不需要依赖模板参数`T`，那我们就不需要也不能在`specialiazed template`中的`<>`位置写任何东西，因为他的位置已经被其后的`int`占领了：
 
-```c++
+```cpp
 // use float specialization
 template <> class TypeToID<float>
 {
@@ -1333,7 +1340,7 @@ template <> class TypeToID<void*>
 
 但有些时候我们不得不给入一个模板参数`T`来进行模板特化，比如我们要特化所有指针类型：
 
-```c++
+```cpp
 template <typename T>                    // 嗯，需要一个T
 class TypeToID<T*>                        // 我要对所有的指针类型特化，所以这里就写T*
 {
@@ -1345,7 +1352,7 @@ public:
 
 在进行模板特化时，我们需要注意的一点是，特化的模板可以把我们提供的类型中的`const`或者`*`给去掉，也就是说，当我们给如下的模板定义分别提供`float*`与`const int`时，其中对应的`T`分别变成了`float`与`int`:
 
-```c++
+```cpp
 // float* -> T:float
 template <typename T>
 class RemovePointer<T*> {
@@ -1373,7 +1380,7 @@ public:
 
 > **A dependent name is a name that depends on the type or the value of a template parameter. For example**：
 
-```c++
+```cpp
 template<class T> class U : A<T>
 {
   typename T::B x;
@@ -1396,7 +1403,7 @@ template<class T> class U : A<T>
 
 而正是基于这样的原因，在如下的例子中：
 
-```c++
+```cpp
 #include <iostream>
 using namespace std;
 
@@ -1460,7 +1467,7 @@ Function h(double)
 
 正因为这一`Two phase name lookup`的特性，`typename`关键字在模板定义内派上了用场。
 
-```c++
+```cpp
 template <typename T> struct X {};
 
 template <typename T> struct Y
@@ -1473,11 +1480,11 @@ template <typename T> struct Y
 };
 ```
 
-这里使用`typename`的目的简而言之，就是**C++**标准规定，`T::type`的形式不仅可以是一个类型，还可以是`T`的一个成员变量，**如果编译器能够在模板定义（该形式出现）时就明确知道它的类型，就不需要加`typename`；如果要等到二阶段，即模板实例化时才知道它是否合法（到底是个变量还是个类型），那么我们必须使用`typename`明确指定这是一个类型。**更多的例子参见原文章。
+这里使用`typename`的目的简而言之，就是**cpp**标准规定，`T::type`的形式不仅可以是一个类型，还可以是`T`的一个成员变量，**如果编译器能够在模板定义（该形式出现）时就明确知道它的类型，就不需要加`typename`；如果要等到二阶段，即模板实例化时才知道它是否合法（到底是个变量还是个类型），那么我们必须使用`typename`明确指定这是一个类型。**更多的例子参见原文章。
 
 这个例子更清晰一些：
 
-```c++
+```cpp
 template<class T> class A
 {
   T::x(y);
@@ -1486,13 +1493,13 @@ template<class T> class A
 }
 ```
 
-根据IBM文档的解释，`T::x`可以被理解成一个**函数调用**，即`T::X()`；或者是`T::x`**类型**用`y`初始化的变量；在这种情况下，**C++编译器解释为函数调用，我们为了让编译器把它理解为`类型`，`typename`派上了用场**。最后的`A::C`这里就成了`ill-formed`，我们也需要使用`typename`来告诉编译器我们想让你如何处理它。
+根据IBM文档的解释，`T::x`可以被理解成一个**函数调用**，即`T::X()`；或者是`T::x`**类型**用`y`初始化的变量；在这种情况下，**cpp编译器解释为函数调用，我们为了让编译器把它理解为`类型`，`typename`派上了用场**。最后的`A::C`这里就成了`ill-formed`，我们也需要使用`typename`来告诉编译器我们想让你如何处理它。
 
 #### Type Computations
 
 与`Computations on Types`相对应的是`Computations on Values`:
 
-```c++
+```cpp
 int s = 3; // computations on values
 using S = int; // computations on types
 
@@ -1515,7 +1522,7 @@ if constexpr (equals) exit(1); // computations on types
 
 比如：
 
-```c++
+```cpp
 // a value meta-function: identity
 template<int V>
 struct identity {
@@ -1531,7 +1538,7 @@ struct identity {
 
 > 在第一个结构体中使用`static`关键字的作用是，允许我们在不实例化结构体（或者类）的时候使用其成员（他们在定义的时候就存在了），即：
 
-```c++
+```cpp
 int val = identity<3>::value;
 ```
 
@@ -1539,9 +1546,9 @@ int val = identity<3>::value;
 
 #### type_traits
 
-我们结合`meta-function`的知识，以及先前我们对模板特例化（`template specialization`）的了解，我们便可以得知**C++**内置的`type traits`库是在做什么事情了，并且为什么我们经常遇到`::type`或者`::value`的写法。这里只需要一个例子，就可以说明问题：
+我们结合`meta-function`的知识，以及先前我们对模板特例化（`template specialization`）的了解，我们便可以得知**cpp**内置的`type traits`库是在做什么事情了，并且为什么我们经常遇到`::type`或者`::value`的写法。这里只需要一个例子，就可以说明问题：
 
-```c++
+```cpp
 // primary/generic template
 template<typename T>
 struct is_pointer {
@@ -1561,7 +1568,7 @@ struct is_pointer<T*> {
 
 最后，我们来看一个例子。这里我们想写一个标准库里`iterator`的`distance`函数，大致的结构应该是这样：
 
-```c++
+```cpp
 template<typename It>
 size_t my_distance(It first, It last) {
     // if it_category == random_access_Iterator
@@ -1578,9 +1585,9 @@ size_t my_distance(It first, It last) {
 }
 ```
 
-现在的问题在于我们首先要找到一个办法能拿到迭代器的类型。于是我们想到了我们的`meta functions`和**C++**的`type traits`:
+现在的问题在于我们首先要找到一个办法能拿到迭代器的类型。于是我们想到了我们的`meta functions`和**cpp**的`type traits`:
 
-```c++
+```cpp
 template<typename It>
 size_t my_distance(It first, It last) {
     // notice! typename, lol we just introduced its effect
@@ -1601,9 +1608,9 @@ size_t my_distance(It first, It last) {
 
 **但是！**这个例子目前并不完美，他无法编译通过，原因正是我们之前总结的-没有利用**SFINAE**！
 
-在**C++17**中，很简单，我们只需做如下改写：
+在**cpp17**中，很简单，我们只需做如下改写：
 
-```c++
+```cpp
 template<typename It>
 size_t my_distance(It first, It last) {
     // notice! typename, lol we just introduced its effect
@@ -1632,11 +1639,11 @@ size_t my_distance(It first, It last) {
 
 > call it by using function pointers
 
-#### Pre-C++11(Functors)
+#### Pre-cpp11(Functors)
 
-在**C++11**之前，我们使用如下方法，这也是我们所说的**闭包**，之后`lambda`表达式的基础或者说内部形式：
+在**cpp11**之前，我们使用如下方法，这也是我们所说的**闭包**，之后`lambda`表达式的基础或者说内部形式：
 
-```c++
+```cpp
 // by value
 class GreaterThan {
 public:
@@ -1658,7 +1665,7 @@ private:
 }
 ```
 
-在**C++11**中引入了`lambda expression`:
+在**cpp11**中引入了`lambda expression`:
 
 ```cpp
 auto func = [capture-clause](parameters) -> return-value {
@@ -1673,24 +1680,24 @@ auto func = [capture-clause](parameters) -> return-value {
 > - can use `=` to capture all by value (**not** recommend)
 > - can use `&` to capture all by reference (**not** recommend)
 
-需要注意的是，在**C++11**中引出了一种返回值的写法：
+需要注意的是，在**cpp11**中引出了一种返回值的写法：
 
-```c++
+```cpp
 auto identifier(argument) -> return type
 ```
 
 这种写法帮助我们写出如下函数：
 
-```c++
+```cpp
 template<typename T1, typename T2>
 auto compose(T1 a, T2 b) -> decltype(a + b);
 ```
 
-而在**C++14**中，我们可以直接省略`->return type`。
+而在**cpp14**中，我们可以直接省略`->return type`。
 
-> 在**C++11**中规定，如果`lambda`函数体内部出现了除了`return`额外的语句，则`lambda`对象默认返回**void**，所以我们需要`-> return type`指定返回类型.
+> 在**cpp11**中规定，如果`lambda`函数体内部出现了除了`return`额外的语句，则`lambda`对象默认返回**void**，所以我们需要`-> return type`指定返回类型.
 
-#### C++14
+#### cpp14
 
 1. can use `auto` as the parameters to templatize the lambda–**generic lambda**
 
@@ -1700,7 +1707,7 @@ auto p = [](auto a) {cout << a << endl; };
 
 1. can capture with an initialiser–`z = x + y`
 
-#### C++17
+#### cpp17
 
 1. use `constexpr` :
 
@@ -1710,7 +1717,7 @@ constexpr auto Square = [](int n) { return n * n; };
 
 2. can capture `*this`
 
-#### C++20
+#### cpp20
 
 We can pass a template tail:
 
@@ -1724,7 +1731,7 @@ auto ForwardToTestFunc = []<typename ...T>(T&& ...args) {
 
 #### mutable
 
-让我们把注意力移回到**C++11**之前的版本，严格来说，成员函数`operator()`的重载应当设置一个**指向常量对象的常量指针**，即写为：
+让我们把注意力移回到**cpp11**之前的版本，严格来说，成员函数`operator()`的重载应当设置一个**指向常量对象的常量指针**，即写为：
 
 ```cpp
 void operator()(...) const {
@@ -1774,32 +1781,32 @@ char str[] = "ABCDEFG";
 
 需要注意的是，`lambda expression`最前边的`auto`并不是`lambda`的返回值，而是**函数类型**。所以我们是否能够不使用`auto`或者说在模板中为了得到`lambda`的类型使用`decltype`关键字？
 
-在**C++20**之前，答案是不行。从定义上来说，`lambda`表达式的类型是闭包类型（`closure type`），如果我们尝试使用`typeid`关键字获取其类型，则即使是同一个类型的`lambda`对象，每一个`lambda`对象的`typeid`值也是不同的：
+在**cpp20**之前，答案是不行。从定义上来说，`lambda`表达式的类型是闭包类型（`closure type`），如果我们尝试使用`typeid`关键字获取其类型，则即使是同一个类型的`lambda`对象，每一个`lambda`对象的`typeid`值也是不同的：
 
 > **The type of the *lambda-expression*** (which is also the type of the closure object) **is a unique, unnamed non-union class type** — called the *closure type*.
 
-这是由于`lambda`被编译器翻译为**未命名类的未命名对象**(*C++ Primer P508*)，即使定义一样，编译器也会认为每个匿名类名都不一样。
+这是由于`lambda`被编译器翻译为**未命名类的未命名对象**(*cpp Primer P508*)，即使定义一样，编译器也会认为每个匿名类名都不一样。
 
 **该匿名类的默认构造函数被设置为`delete`，并且赋值函数也被禁用，但是我们可以调用其拷贝构造函数(是否含有默认的拷贝构造/移动构造函数通常要视捕获的数据成员类型而定)**：
 
-```c++
+```cpp
 auto f = [](int x){ return x; };
 decltype(f) g = f;
 ```
 
-需要注意的是，C++允许使用`decltype`提取已经计算的`lambda`表达式，如上所示；但是不允许提取未计算的`lambda`表达式类型：
+需要注意的是，cpp允许使用`decltype`提取已经计算的`lambda`表达式，如上所示；但是不允许提取未计算的`lambda`表达式类型：
 
-```c++
+```cpp
 decltype([](int x){ return x; })    // error
 ```
 
-不过自**C++20**起，**未捕获值的`lambda`表达式拥有了默认构造函数和赋值运算符**。
+不过自**cpp20**起，**未捕获值的`lambda`表达式拥有了默认构造函数和赋值运算符**。
 
 
 
 当**捕获列表为空**时，我们可以将`lambda`表达式赋值给一个拥有相同函数签名的函数指针，**相应的函数指针指向的是lambda表达式内部的一个static成员函数**：
 
-```c++
+```cpp
 int(* f)(int, int) = [](int a, int b){ return a + b; };
 ```
 
@@ -1811,7 +1818,7 @@ int(* f)(int, int) = [](int a, int b){ return a + b; };
 
 根据先前的讨论，当`lambda`捕获值时，我们无法执行到函数指针的隐式转换。同时此时由于我们无法确定`lambda`表达式的具体类型是什么，意味着使用**继承**，即**运行期多态**让`lambda`对象进行动态绑定不可行。那么我们只有使用**模板**，作为一种**编译器多态**，可以将`lambda`表达式传入函数当中。这样做的一个好处是编译器可以在编译期将`lambda`表达式**内联**进调用函数内部，加快运行速度：
 
-```c++
+```cpp
 template< class ForwardIt, class T >
 constexpr std::pair<ForwardIt,ForwardIt>
               equal_range( ForwardIt first, ForwardIt last,
@@ -1820,9 +1827,9 @@ constexpr std::pair<ForwardIt,ForwardIt>
 
 ##### std::function
 
-而在**C++11**中，提出了`std::function`，它的存在使得几个可调用对象共享同一种调用形式成为可能。
+而在**cpp11**中，提出了`std::function`，它的存在使得几个可调用对象共享同一种调用形式成为可能。
 
-```c++
+```cpp
 // normal functions
 int add(int i, int j) { return i + j; }
 // lambda
@@ -1837,7 +1844,7 @@ struct divide {
 
 我们也可以利用`std::function`来把`lambda`表达式传入函数中：
 
-```c++
+```cpp
 std::function<double(double, double)> f_mul = [a](double x, double y) { return x * y + a; };
 
 double calculator(double a, double b, std::function<double(double, double)> fn)
@@ -1873,7 +1880,7 @@ f1(1, 2, 1001); // 1 is bound by _1, 2 is bound by _2, 1001 is unused
 
 比如，我们可以使用如下语法：
 
-```c++
+```cpp
 std::vector<std::reference_wrapper<int>> v(l.begin(), l.end());
 ```
 
@@ -1885,7 +1892,7 @@ std::vector<std::reference_wrapper<int>> v(l.begin(), l.end());
 
 #### Variadic arguments
 
-[1](https://eli.thegreenplace.net/2014/variadic-templates-in-c/)在**C++11**之前，如果我们想让一个函数接受任意参数，那么我们需要使用`...`的语法配合`va_`系列的宏来使用，[文档](https://en.cppreference.com/w/cpp/utility/variadic)给出了一个例子：
+[1](https://eli.thegreenplace.net/2014/variadic-templates-in-c/)在**cpp11**之前，如果我们想让一个函数接受任意参数，那么我们需要使用`...`的语法配合`va_`系列的宏来使用，[文档](https://en.cppreference.com/w/cpp/utility/variadic)给出了一个例子：
 
 ```cpp
 #include <iostream>
@@ -1930,7 +1937,7 @@ void va_start( std::va_list ap, parm_n );
 
 之后每当我们调用一次`va_arg`，就可以获取`va_list`内的下一个参数；最终调用`va_end`终止这一过程。
 
-需要注意的是，在使用`variadic arguments`时，`...`必须跟随在参数列表之后，而不允许被放到参数列表的前边。但是在**C++**中，这样的使用方式是被允许的：
+需要注意的是，在使用`variadic arguments`时，`...`必须跟随在参数列表之后，而不允许被放到参数列表的前边。但是在**cpp**中，这样的使用方式是被允许的：
 
 ```cpp
 int printz(...)
@@ -1997,9 +2004,9 @@ f(h(args...) + args...); // expands to
 // f(h(E1,E2,E3) + E1, h(E1,E2,E3) + E2, h(E1,E2,E3) + E3)
 ```
 
-一个包扩展的例子可参见*C++ Primer* P621，需要注意的是，在例中进行函数调用时的包扩展，先将包中第一个参数剥离（`peel off`），对应了`const T &t`,余下的元素构成了新的参数包，并递归调用，直到我们遇到了`base case`，并使用对应了非可变参数函数模板：
+一个包扩展的例子可参见*cpp Primer* P621，需要注意的是，在例中进行函数调用时的包扩展，先将包中第一个参数剥离（`peel off`），对应了`const T &t`,余下的元素构成了新的参数包，并递归调用，直到我们遇到了`base case`，并使用对应了非可变参数函数模板：
 
-```c++
+```cpp
 // base case function
 template<typename T>
 ostream &print(ostream &os, const T &t) {
@@ -2031,7 +2038,7 @@ ostream& print(ostream &os, const T &t, const Args&... rest) {
 
 ### range
 
-在**C++20**中，提出了`range`的概念，写了一个`range`库，其中包含`range`, `view`, `range adaptor`等……但这里不打算深究，具体详见官方文档以及[这篇文章](https://www.zhihu.com/column/p/86809598)。
+在**cpp20**中，提出了`range`的概念，写了一个`range`库，其中包含`range`, `view`, `range adaptor`等……但这里不打算深究，具体详见官方文档以及[这篇文章](https://www.zhihu.com/column/p/86809598)。
 
 ## Object-Oriented Programming
 
@@ -2039,7 +2046,7 @@ ostream& print(ostream &os, const T &t, const Args&... rest) {
 
 几种不同的`const`含义：
 
-```c++
+```cpp
 // 指向整型常量的指针(可修改指针本身，不可修改指针指向的对象)
 const int* a;
 // or:
@@ -2048,7 +2055,7 @@ int const* a;
 // 指向整形的常量指针(不可修改指针本身，可修改指针指向的对象)
 int* const a;
 
-// 根据《C++ Primer》，this指针默认为指向非常量对象的常量指针，
+// 根据《cpp Primer》，this指针默认为指向非常量对象的常量指针，
 // 此操作将this指针设定为指向常量对象的常量指针
 void func() const
 ```
@@ -2057,13 +2064,13 @@ void func() const
 
 加入我们将对象定义为`const`类型，那么在声明之后，对象就不可以再改变了，这意味着一般的构造函数初始化方法会出现问题（先建立对象，再挨个初始化其元素）。而`initialization list`在建立对象的同时立即初始化其所有元素：
 
-```c++
+```cpp
 test(int num1, double str1): num(num1), str(str) {};
 ```
 
 我们也可以直接使用大括号初始化列表（`brace-init-list`），编译器也会为我们选择合适的对应的构造函数（如果需要的话）：
 
-```c++
+```cpp
 class foo {
 public:
     foo(size_t size): 
@@ -2100,7 +2107,7 @@ private:
 3. 定义类`B`，提供完整定义；
 4. 将类`A`中需要调用`B`的方法**定义**补充完整
 
-```c++
+```cpp
 // Forward Declaration
 class B;
  
@@ -2163,7 +2170,7 @@ void A::get_data_B(B objb)
 
 - A.h
 
-```c++
+```cpp
 /* This is called a "forward declaration".  We use it to tell the compiler that
    the identifier "B" will from now on stand for a class, and this class will be
    defined later.  We will not be able to make any use of "B" before it has been
@@ -2182,7 +2189,7 @@ class A
 
 - B.h
 
-```c++
+```cpp
 #include "A.h"
 
 class B
@@ -2206,7 +2213,7 @@ class B
 
 我们可以通过如下手段解决此问题：首先把需要使用的容器非静态类成员转化成使用类型别名表示的形式，之后在友元类中使用`::`获取其类型，定义一个该类型的指针，并将指针初始化指向容器成员：
 
-```c++
+```cpp
 // friend class, class type foo as template parameter
 template<typename foo>
 class foo_1 {
@@ -2263,7 +2270,7 @@ public:
 #### General rule of thumb
 
 1. Some operators must be implemented as members (
-   eg. [], (), ->, =) due to C++ semantics.
+   eg. [], (), ->, =) due to cpp semantics.
 
 > 因为成员函数隐藏的第一个参数一定是`this`，即对象的地址，而使用这些操作符时我们无法在别处提供对象地址.
 
@@ -2302,7 +2309,7 @@ public:
 
 需要注意的是，当我们在类模板中定义友元函数时，我们**还需要为友元函数单独提供一份模板参数，而不能直接利用类模板参数**–因为友元本身并不属于类成员的一部分：
 
-```c++
+```cpp
 template<typename K, typename M, typename H=std::hash<K>>
 class foo {
     // do something
@@ -2327,7 +2334,7 @@ class foo {
 
 在*HashMap*的作业中，我们需要在`iterator`类中对**成员访问操作符**进行重载。该运算符的重载可能看起来有些奇怪，实际上，运算符重载的结果不是简单的*替换原则*，比如我们可能认为`obj->value`重载替换之后应当被理解为`ptrvalue`（`ptr`是私有指针成员），但实际上该运算符的重载结果为：
 
-```c++
+```cpp
 (obj.operator->())->value;
 ```
 
@@ -2366,15 +2373,15 @@ ostream& operator<<(ostream& out, const Fraction& f) {
 
 > 如果~~构造函数**可以只接受一个实参**（包括对其余所有形参提供了默认值的情况）~~，则它实际上定义了由实参类型转换为类类型的隐式转换机制。这种构造函数被称为**转换构造函数**。
 
-仅接受一个实参的规定仅在*C++11*之前适用。在*C++11*之后，`converting constructor`的定义变为：
+仅接受一个实参的规定仅在*cpp11*之前适用。在*cpp11*之后，`converting constructor`的定义变为：
 
 > 没有由`explicit`关键字修饰的构造函数
 
-> *C++ Primer*P264:
+> *cpp Primer*P264:
 >
 > 编译器**只会自动执行一步隐式转换**，也就是说如果我们接受一个`string`类型的参数，那么我们不能直接把`char*`放进去，否则自动转换为`string`后，不会继续隐式转换了.(但我们可以做显式转换):
 
-```c++
+```cpp
 class test_explicit {
 public:
  test_explicit(string text): text(text) {}
@@ -2394,7 +2401,7 @@ cout << "Combine value: " << foo_1.combine("9999") << endl;
 
 我们可以通过关键字`explicit`来抑制构造函数定义的隐式转换:
 
-```c++
+```cpp
 class test_explicit {
 public:
     explicit test_explicit(int i): data(i) {}
@@ -2414,7 +2421,7 @@ cout << "Combine value: " << foo_1.combine(new_value) << endl;
 
 > 注意，当拷贝构造函数被声明为`explicit`时，表明拷贝构造函数不能被隐式调用，所以，如果我们尝试使用`=`进行拷贝初始化（**隐式调用了拷贝构造函数**），也是不被允许的:
 
-```c++
+```cpp
 string null_book = "9999";
 Sales_data item2 = null_book; //error
 ```
@@ -2425,7 +2432,7 @@ Sales_data item2 = null_book; //error
 
 `explicit`关键字除了可以用在构造函数之前外，还可以用在类型转换运算符前：
 
-```c++
+```cpp
 explicit operator double() const {
     // do something
 }
@@ -2433,13 +2440,13 @@ explicit operator double() const {
 
 类型转换运算符是类的一种特殊成员函数，一般形式便如(因为一般不改变原对象的内容，所以声明为`const`)：
 
-```c++
+```cpp
 operator type() const;
 ```
 
-一个可能借此机会发生隐式类型转换的例子（*C++ Primer P516*）是：
+一个可能借此机会发生隐式类型转换的例子（*cpp Primer P516*）是：
 
-```c++
+```cpp
 int i = 42;
 cin << i;
 ```
@@ -2463,9 +2470,9 @@ cin << i;
 
 根据*Wikipedia*的解释：
 
-> The **most vexing parse** is a counterintuitive form of syntactic [ambiguity resolution](https://en.wikipedia.org/wiki/Ambiguous_grammar) in the [C++](https://en.wikipedia.org/wiki/C%2B%2B) programming language. In certain situations, the C++ grammar cannot distinguish between the [creation](https://en.wikipedia.org/wiki/Initialization_(programming)) of an object [parameter](https://en.wikipedia.org/wiki/Parameter_(computer_programming)) and [specification of a function's type](https://en.wikipedia.org/wiki/Type_declaration). In those situations, the compiler is required to interpret the line as a function type specification.
+> The **most vexing parse** is a counterintuitive form of syntactic [ambiguity resolution](https://en.wikipedia.org/wiki/Ambiguous_grammar) in the [cpp](https://en.wikipedia.org/wiki/C%2B%2B) programming language. In certain situations, the cpp grammar cannot distinguish between the [creation](https://en.wikipedia.org/wiki/Initialization_(programming)) of an object [parameter](https://en.wikipedia.org/wiki/Parameter_(computer_programming)) and [specification of a function's type](https://en.wikipedia.org/wiki/Type_declaration). In those situations, the compiler is required to interpret the line as a function type specification.
 
-简而言之，编译器不能判断这是一个初始化操作还是在调用函数，在这种情况下，他被当作一个函数来处理了。**所以不要这么写！**我们可以使用C++11中的`Uniform initialization`（`a{x}`）来规避歧义。
+简而言之，编译器不能判断这是一个初始化操作还是在调用函数，在这种情况下，他被当作一个函数来处理了。**所以不要这么写！**我们可以使用cpp11中的`Uniform initialization`（`a{x}`）来规避歧义。
 
 需要注意的是，上图中在函数结尾返回对象时调用的即是**copy constructor**.
 
@@ -2493,7 +2500,7 @@ StringVector::StringVector(const StringVector& other) :
 
 需要注意的是，在`copy assignment`中，我们要考虑到`copy`的对象与源对象是同一个的情况（`self-assignment`）:
 
-```c++
+```cpp
 StringVector& StringVector::operator=(const StringVector& rhs) {
     if (this != &rhs) {
         delete [] _elems;
@@ -2512,14 +2519,14 @@ StringVector& StringVector::operator=(const StringVector& rhs) {
 
 如果我们的类不需要拷贝/移动操作，我们需要在`public`域中使用`=delete`将其禁用（但`=delete`关键字并非只适用于这几种函数，该关键字意为“弃用”）：
 
-```c++
+```cpp
 test(const test&) =delete;
 test& operator=(const test&) =delete;
 ```
 
 如果我们需要默认的行为，可以要求编译器提供生成默认构造函数（一般此时我们还需要其它类型的构造函数）
 
-```c++
+```cpp
 test() = default;
 ```
 
@@ -2541,9 +2548,9 @@ test() = default;
 
 ### Delegating Constructor
 
-**C++11**引入了**委托构造函数**–使用它所属类的其他构造函数执行他自己的初始化过程，或者将自己的职责委托给其他构造函数：
+**cpp11**引入了**委托构造函数**–使用它所属类的其他构造函数执行他自己的初始化过程，或者将自己的职责委托给其他构造函数：
 
-```c++
+```cpp
 class Sales_data {
 public:
     Sales_data(): Sales_data("", 0, 0) {}
@@ -2559,7 +2566,7 @@ public:
 
 `constexpr`函数是指能用于常量表达式的函数：它的返回类型、所有的形参类型都是**字面值类型**，而且函数体中除了`using/typedef`等在**运行时不执行任何操作**的语句外，只能有一条`return`语句：
 
-```c++
+```cpp
 constexpr int new_sz() {return 42;}
 constexpr int foo = new_sz(); // foo is a const expression
 ```
@@ -2568,7 +2575,7 @@ constexpr int foo = new_sz(); // foo is a const expression
 
 我们允许`constexpr`函数的返回值并非一个常量：当给入函数的实参是常量表达式时，返回值也是常量表达式，反之不然：
 
-```c++
+```cpp
 constexpr size_t scale(size_t cnt) { return new_sz() * cnt;}
 // OK
 int arr[scale(2)];
@@ -2589,11 +2596,11 @@ int arr[scale(i)];
 
 该函数的参数声明是用了可变参数模板，并对参数包`Args`进行了`pattern=Args&&`的`pack expansion`操作。与`push_back`方法所不同的是，该方法借助**右值引用**，也就是我们接下来要谈的特性，避免了先创建一份数据，再复制的操作，而是直接给定需要的数据元素参数，加入数据队列中：
 
-```c++
+```cpp
 std::vector<President> elections;
 std::cout << "emplace_back:\n";
 auto& ref = elections.emplace_back("Nelson Mandela", "South Africa", 1994);
-assert(ref.year == 1994 && "uses a reference to the created object (C++17)");
+assert(ref.year == 1994 && "uses a reference to the created object (cpp17)");
  
 std::vector<President> reElections;
 std::cout << "\npush_back:\n";
@@ -2610,7 +2617,7 @@ reElections.push_back(President("Franklin Delano Roosevelt", "the USA", 1936));
 
 根据[这篇文章](http://thbecker.net/articles/rvalue_references/section_02.html)，为了提高运行效率，我们尝试使用某种方法避免一些不必要的数据复制过程，比如当给到这样一个拷贝赋值函数：
 
-```c++
+```cpp
 X& X::operator=(X const & rhs)
 {
   // [...]
@@ -2623,7 +2630,7 @@ X& X::operator=(X const & rhs)
 
 现在，假设`X`被如下使用：
 
-```c++
+```cpp
 x foo();
 // do something
 x = foo();
@@ -2631,7 +2638,7 @@ x = foo();
 
 那么相比起在先前的函数体描述中的方法，是否存在一种更为高效的方法让`X`获取当前`foo()`的内容呢？我们想如果可以直接将指向`X`与指向`temporary object`的指针交换一下(即让`X`拿到这个行将销毁的临时对象的控制权，而不是想着再去复制一份给自己用)，不是更为高效嘛？于是我们有了一个期望的函数模板：
 
-```c++
+```cpp
 X& X::operator=(<mystery type> rhs)
 {
   // [...]
@@ -2654,7 +2661,7 @@ X& X::operator=(<mystery type> rhs)
 
 完整的来说，我们希望移动赋值函数具有如下定义：
 
-```c++
+```cpp
 X& X::operator=(X&& rhs)
 {
 
@@ -2672,7 +2679,7 @@ X& X::operator=(X&& rhs)
 
 > `std::move`正是通过强制将左值转换为右值的方法，使得外部函数可以调用如上所示的右值重载，使得等式左边的对象获得给入的右对象的实际控制权：
 
-```c++
+```cpp
 struct A {
     A(A&& a) {
         this->data = a->data;
@@ -2731,7 +2738,7 @@ S&& forward(typename remove_reference<S>::type& a) noexcept
 
 需要注意的是，我们只能够将**左值引用绑定到左值，右值引用绑定到右值**，
 
-```c++
+```cpp
 // rvalue reference
 // here, v1 + v2 is a temporary object, which is a rvalue
 auto&& v4 = v1 + v2;
@@ -2739,17 +2746,17 @@ auto&& v4 = v1 + v2;
 
 一种特殊情况是：可以将`const lvalue reference`绑定到`rvalue`上：
 
-```c++
+```cpp
 const auto& ptr3 = ptr + 5;
 ```
 
 原因如下：
 
-> Normally, a temporary object lasts only until the end of the full expression in which it appears. However, **C++ deliberately specifies that binding a temporary object to a reference *to const* on the stack lengthens the lifetime of the temporary to the lifetime of the reference itself**, and thus avoids what would otherwise be a common dangling-reference error. In the example above, the temporary returned by f() lives until the closing curly brace. (**Note this only applies to stack-based references. It doesn’t work for references that are members of objects.**)
+> Normally, a temporary object lasts only until the end of the full expression in which it appears. However, **cpp deliberately specifies that binding a temporary object to a reference *to const* on the stack lengthens the lifetime of the temporary to the lifetime of the reference itself**, and thus avoids what would otherwise be a common dangling-reference error. In the example above, the temporary returned by f() lives until the closing curly brace. (**Note this only applies to stack-based references. It doesn’t work for references that are members of objects.**)
 
 简而言之，使用`const reference`可以延长临时对象的生命周期，但这仅限于`local const reference`，在如下语句中，是不会产生实际效应的：
 
-```c++
+```cpp
 Sandbox(const string& n): member(n) {};
 ```
 
@@ -2773,13 +2780,13 @@ Sandbox(const string& n): member(n) {};
 - `type`
 - `value category`
 
-在该函数参数中，`type`为`rvalue reference of T`，而我们这里所说的`lvalue`，是指的该表达式的`value category`。那么问题来了，为什么它的`value category`为`lvalue`呢？这是因为**C++**的这条规定：
+在该函数参数中，`type`为`rvalue reference of T`，而我们这里所说的`lvalue`，是指的该表达式的`value category`。那么问题来了，为什么它的`value category`为`lvalue`呢？这是因为**cpp**的这条规定：
 
 > Things that are declared as rvalue reference can be lvalues or rvalues. The distinguishing criterion is: *if it has a name*, then it is an lvalue. Otherwise, it is an rvalue.
 
-这里的`T&& a`显然是一个`name variable`，而不是类似于`3`或者`goo()`这种的`unnamed variable`。为什么**C++**要做出这种规定，详见[这篇文章](http://thbecker.net/articles/rvalue_references/section_05.html)。
+这里的`T&& a`显然是一个`name variable`，而不是类似于`3`或者`goo()`这种的`unnamed variable`。为什么**cpp**要做出这种规定，详见[这篇文章](http://thbecker.net/articles/rvalue_references/section_05.html)。
 
-```c++
+```cpp
 void foo(X&& x) {
     X anotherX = x; // calls X(X const & rhs)
 }
@@ -2803,14 +2810,14 @@ X x = goo(); // calls X(X&& rhs) because the thing on the righ side has no name
 
 #### Move Constructor & Move assignment
 
-```c++
+```cpp
 StringVector(StringVector&& other);
 StringVector& operator=(StringVector&& rhs);
 ```
 
 在写这两个函数的时候，我们需要注意一点，即之前谈到的函数参数中的`StringVector&& other`的`value category`其实是`lvalue`，这意味着我们可以写出如下的代码：
 
-```c++
+```cpp
 Axess& operator=(Axess&& rhs) {
     students = rhs.students;
 }
@@ -2822,7 +2829,7 @@ Axess& operator=(Axess&& rhs) {
 
 在课上有一个`stringVector`的例子：
 
-```c++
+```cpp
 StringVector& StringVector::operator=(const StringVector& rhs) noexcept {
     if (this != &rhs) { // IMPORTANT: prevent self-assignment
         delete [] _elems;
@@ -2884,7 +2891,7 @@ StringVector::StringVector(StringVector&& other) noexcept :
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/202111191801959.png" alt="image-20211119180156845" style="zoom:50%;" />
 
-```c++
+```cpp
 template<class T> 
 typename remove_reference<T>::type&&
 std::move(T&& a) noexcept
@@ -2922,7 +2929,7 @@ template<class T> struct remove_reference<T&&> { typedef T type; };
 
 > 如果这里我们直接使用`static_cast`，而非`std::move`，那么我们需要作重载已分别适应传入的`X`经过推断后变为`X&`（原本的`X`为`lvalue`），以及保持`X`（原本的`X`为`rvalue`）的两种情况。而在原函数`std:move`中使用`remove_reference`的原因就是避免因对`static_cast<X&&>`中的`unversal referneces`进行`reference-collapsing`从而最终返回一个左值引用。
 
-根据*C++ Primer*，使用`std::move(rr1)`意味着承诺：除了对`rr1`进行**赋值或者销毁外，不再使用它**。这不也正是我们一开始的初衷吗？“当我们对函数传入一个右值作为参数的时候，因为它行将销毁，所以我们计划窃取它的值，把我们的指针指向他存储的内容所在的位置。”
+根据*cpp Primer*，使用`std::move(rr1)`意味着承诺：除了对`rr1`进行**赋值或者销毁外，不再使用它**。这不也正是我们一开始的初衷吗？“当我们对函数传入一个右值作为参数的时候，因为它行将销毁，所以我们计划窃取它的值，把我们的指针指向他存储的内容所在的位置。”
 
 #### Universal References
 
@@ -2944,7 +2951,7 @@ template<class T> struct remove_reference<T&&> { typedef T type; };
 
 其实在`auto&&`的这种情况中，与`function template parameters`的情况基本完全相同，也是在做`type deduction`而已。比如在这个例子当中，`auto&&`就是一个`lvalue reference`:
 
-```c++
+```cpp
 std::vector<int> v;
 ...
 auto&& val = v[0];
@@ -2956,7 +2963,7 @@ auto&& val = v[0];
 
 需要注意的是，`universal reference`只能存在于`type deduction`**直接出现**的地方，并且只有当引用声明为`T&&`的形式时才可以，也就是说以下的例子全部为`rvalue reference`:
 
-```c++
+```cpp
 template<typename T>
 void f(const T&& param); // const T rather than T
 
@@ -2973,7 +2980,7 @@ void f(MyTemplateParamType&& param);  // “&&” means universal reference
 
 特别的是，在*Scott Meyers*的[文章](https://isocpp.org/blog/2012/11/universal-references-in-c11-scott-meyers)中，有这么一个例子：
 
-```c++
+```cpp
 template <class T, class Allocator = allocator<T> >
 class vector {
 public:
@@ -2986,7 +2993,7 @@ public:
 
 这就是`vector`的`push_back`方法，在这里`T&&`是一个`rvalue reference`而非`universal reference`，因为类型推断并没有发生在`push_back`函数的声明处，`vector<T>`依赖于`T`（`dependent name`[1](https://en.cppreference.com/w/cpp/language/dependent_name)）。只要`vector`的类型被确定，`push_back`方法便不再需要`type deduction`了。所以`universal reference`只会出现在`type deduction`的位置上。所以在`emplace_back`的声明里：
 
-```c++
+```cpp
 template <class T, class Allocator = allocator<T> >
 class vector {
 public:
@@ -3003,18 +3010,18 @@ public:
 
 通常意义上，以下语句是不合法的：
 
-```c++
+```cpp
 Widget w1;
 Widget& & w2 = w1;
 ```
 
-但是我们无法在编译过程中避免出现如上所示的情况：为了解决这个问题，**C++**提出了`reference-collapsing`法则。
+但是我们无法在编译过程中避免出现如上所示的情况：为了解决这个问题，**cpp**提出了`reference-collapsing`法则。
 
 ##### reference-collapsing
 
 **当我们对`universal reference`类型的模板参数做类型推断时**：
 
-```c++
+```cpp
 template<typename T>
 void f(T&& param);
 
@@ -3022,14 +3029,14 @@ f(10);
 f(x);
 ```
 
-需要注意的是，根据前边提到的，在遇到万能引用时，`lvalue` `T`(`value category`)会被推断为`T&`（`type`），而`rvalue` `T(`value category`)`则被推断为`T`（`type`）。这意味着，我们一定会在之后遇到`& &&`的类似情况，由于这看起来不太合理，**C++**是用了**引用折叠**（`reference-collapsing`）的方法解决这一问题：
+需要注意的是，根据前边提到的，在遇到万能引用时，`lvalue` `T`(`value category`)会被推断为`T&`（`type`），而`rvalue` `T(`value category`)`则被推断为`T`（`type`）。这意味着，我们一定会在之后遇到`& &&`的类似情况，由于这看起来不太合理，**cpp**是用了**引用折叠**（`reference-collapsing`）的方法解决这一问题：
 
 > - **An rvalue reference to an rvalue reference becomes (“collapses into”) an rvalue reference.**
 > - **All other references to references (i.e., all combinations involving an lvalue reference) collapse into an lvalue reference.**
 
 需要注意的是，当**一个变量的类型本身就是引用时，情况有所不同：变量类型（`type`）的引用部分会被直接忽视**：
 
-```c++
+```cpp
 int x;
 int&& r1 = 10;                   // r1’s type is int&&
 int& r2 = x;                     // r2’s type is int&
@@ -3040,7 +3047,7 @@ f(r2);
 
 所以何时会发生引用折叠呢？除了模板实例化（`template instantiation`）以外，当然还包括`auto`，以及`typedef`和`decltype`:
 
-```c++
+```cpp
 // typedef:
 template<typename T>
 class Widget {
@@ -3056,7 +3063,7 @@ Widget<int&> w;
 
 举个例子，以如下的代码为例，我们尝试要将参数`arg`通过`factory function`传递给`T`的构造函数：
 
-```c++
+```cpp
 template<typename T, typename Arg> 
 shared_ptr<T> factory(Arg arg)
 { 
@@ -3076,7 +3083,7 @@ void f(A& a, B& b, C& c)
 1. `std::forward()`
 2. `reference-collapsing`
 
-```c++
+```cpp
 // perfect forwarding
 template<typename T, typename Arg> 
 shared_ptr<T> factory(Arg&& arg)
@@ -3087,7 +3094,7 @@ shared_ptr<T> factory(Arg&& arg)
 
 `std::forward()`的定义如下：
 
-```c++
+```cpp
 // forward:
 template<class S>
 // universal reference only happens in the param list, not at the return value position
@@ -3145,7 +3152,7 @@ std::pair<typename HashMap<K, M, H>::iterator, bool> HashMap<K, M, H>::try_empla
 
 1. [关于`emplace`的构造函数调用问题](https://juejin.cn/post/7029372430397210632).
 2. [try_emplace的使用](https://zhuanlan.zhihu.com/p/351788009).
-2. [关于原位构造](https://hedzr.com/c++/variant/in-place-construction-in-cxx/).
+2. [关于原位构造](https://hedzr.com/cpp/variant/in-place-construction-in-cxx/).
 
 #### noexcept
 
@@ -3165,7 +3172,7 @@ std::pair<typename HashMap<K, M, H>::iterator, bool> HashMap<K, M, H>::try_empla
 >
 > The fact that you defined one of these means one of your members has ownership issues that need to be resolved.
 
-需要注意的是，自**C++11**起，如果没有用户定义的复制构造函数、复制赋值运算符、析构函数，并且生成的移动构造函数（移动赋值运算符）有效，则编译器会隐式生成移动构造函数（移动赋值运算符）。
+需要注意的是，自**cpp11**起，如果没有用户定义的复制构造函数、复制赋值运算符、析构函数，并且生成的移动构造函数（移动赋值运算符）有效，则编译器会隐式生成移动构造函数（移动赋值运算符）。
 
 ### Copy elision & RVO
 
@@ -3180,7 +3187,7 @@ std::pair<typename HashMap<K, M, H>::iterator, bool> HashMap<K, M, H>::try_empla
 
 1. 一个函数以值传递参数，当调用时，我们选择传入一个临时对象作为参数：
 
-```c++
+```cpp
 void foo(MyClass param) {
     // do something
 }
@@ -3193,11 +3200,11 @@ int main() {
 
 何为复制省略？这里，程序原本需要调用移动构造函数，把临时对象`MyClass()`移动到`param`中，而由于`copy elision`机制的存在，这里就可以直接把生成的`temporary object`传入函数，而不需要多余的移动（或者复制）了。
 
-2. 还有一种情况，是函数返回一个临时对象，这里**C++**引出了重要的编译器优化方法：**RVO**.
+2. 还有一种情况，是函数返回一个临时对象，这里**cpp**引出了重要的编译器优化方法：**RVO**.
 
 需要注意的是，`copy elision`即使在复制/移动操作存在`side effects`时仍然适用。也就是说，根据*Wikipedia*上的这个例子：
 
-```c++
+```cpp
 struct C {
   C() {}
   C(const C&) { std::cout << "A copy was made.\n"; }
@@ -3215,30 +3222,30 @@ int main() {
 
 函数返回的是一个临时对象，所以编译器会进行`copy elision`，这里被叫做`Return Value Optimization(RVO)`。根据编译器的不同设置，它可以选择优化掉一次将`f()`内生成的临时对象赋值给返回值的操作，还可以选择优化掉一次将`f()`返回值赋值给`C obj`的操作，故以下所有输出结果都是合理的：
 
-```c++
+```cpp
 Hello World!
 A copy was made.
 A copy was made.
 ```
 
-```c++
+```cpp
 Hello World!
 A copy was made.
 ```
 
-```c++
+```cpp
 Hello World!
 ```
 
 需要注意的是，这里的例子中`C`的复制构造函数必须是带`const`的参数，因为右值可以绑定到`const`的左值引用，如果没有`const`，则会报错。
 
-需要注意的一点是，在**C++17**之前，**使用临时对象（一个`prvalue`）初始化另一个对象时的`copy elision`优化不是强制性的**。我们可以通过在编译器中使用加上*`-fno-elide-constructors`*来关闭这一选项。而正因为该优化此时并非强制，编译器要求即使优化发生，复制构造函数/移动构造函数也要存在（显式或者隐式（编译器自动生成）），如果我们给这些函数加上一个`=delete`，则不能通过编译。
+需要注意的一点是，在**cpp17**之前，**使用临时对象（一个`prvalue`）初始化另一个对象时的`copy elision`优化不是强制性的**。我们可以通过在编译器中使用加上*`-fno-elide-constructors`*来关闭这一选项。而正因为该优化此时并非强制，编译器要求即使优化发生，复制构造函数/移动构造函数也要存在（显式或者隐式（编译器自动生成）），如果我们给这些函数加上一个`=delete`，则不能通过编译。
 
-但自**C++17**起，这种行为被描述为`passing Unmaterialized objects`，它变成了编译器**强制优化**的一种行为，即使此时复制构造函数/移动构造函数不可选，程序仍可正常编译运行。
+但自**cpp17**起，这种行为被描述为`passing Unmaterialized objects`，它变成了编译器**强制优化**的一种行为，即使此时复制构造函数/移动构造函数不可选，程序仍可正常编译运行。
 
 一种特殊情况是`Named Return Value Optimization(NRVO)`，此时我们返回的是一个`lvalue`，一个具名对象，而不是一个临时对象（`prvalue`）：
 
-```c++
+```cpp
 MyClass foo() {
     MyClass obj;
     // do something
@@ -3272,7 +3279,7 @@ MyClass bar(MyClass obj) {
 
 在我们使用继承语法：
 
-```c++
+```cpp
 class A : public B {
 
 }
@@ -3288,7 +3295,7 @@ class A : public B {
 
 如果基类中存在静态成员，则无论从基类派生出多少子类，**静态成员**只存在**唯一的实例**。如果该成员为`private`，则**派生类无权访问**；如果该成员被设置为允许访问，则派生类与基类均可访问。关于**static**关键字在面向对象时的使用，作如下补充：
 
-`static`对象可以分为`non-local static`和`local static`.`non-local static`对象的初始化发生在**加载阶段**，即**main**函数执行前。但C++没有规定多个`non-local static`对象的初始化顺序，尤其是来自多个编译单元的`non-local static`对象，他们的初始化顺序是**随机**的.
+`static`对象可以分为`non-local static`和`local static`.`non-local static`对象的初始化发生在**加载阶段**，即**main**函数执行前。但cpp没有规定多个`non-local static`对象的初始化顺序，尤其是来自多个编译单元的`non-local static`对象，他们的初始化顺序是**随机**的.
 
 而对于`local static`，初始化过程发生在**第一次执行到该语句时**，并且该**局部静态变量只初始化这一次**。
 
@@ -3312,19 +3319,19 @@ class A : public B {
 
 我们可以使用`final`阻止一个类被继承：
 
-```c++
+```cpp
 class A final {/* */}
 ```
 
 还可以使用它来阻止一个函数被后续覆盖（放在函数声明最后，函数体之前）：
 
-```c++
+```cpp
 void foo() const final;
 ```
 
 我们可以使用关键字`override`表示这是一个派生类中的虚函数，显式注明覆盖了基类的虚函数；来方便编译器检查我们是否给错了参数列表（找不到对应的基类中的函数）：
 
-```c++
+```cpp
 void foo() const override;
 ```
 
@@ -3338,9 +3345,9 @@ void foo() const override;
 - 类的实现者
 - 派生类
 
-派生类可以访问基类的`protected`成员，但是普通用户不行。需要注意的是，派生类的成员以及友元只能通过派生类对象访问基类的受保护成员，即**他们只能访问派生类对象中的基类部分的受保护成员，对基类中的受保护成员没有访问特权：** 参见*C++ Primer* P543.
+派生类可以访问基类的`protected`成员，但是普通用户不行。需要注意的是，派生类的成员以及友元只能通过派生类对象访问基类的受保护成员，即**他们只能访问派生类对象中的基类部分的受保护成员，对基类中的受保护成员没有访问特权：** 参见*cpp Primer* P543.
 
-```c++
+```cpp
 class Base {
 protected:
     int prot_mem;
@@ -3356,7 +3363,7 @@ class sneaky : public Base {
 
 在程序中，存在两个访问说明符，分别位于类的实现中以及继承的接口处。其中，**派生类的成员以及友元能否访问基类的成员只与基类中的访问说明符有关。** 而位于继承接口处的访问说明符可以控制普通用户，即**派生类用户**的访问权限：也就是我们在*CS 106X*中所提到的：继承关系在**类外部**是否可见----如果此时我们使用了**非public**访问说明符，那么派生类用户无法获取基类内容：
 
-```c++
+```cpp
 class Base {
 public:
     void pub_mem();
@@ -3389,7 +3396,7 @@ d2.pub_mem();		// error
 
 基类通常应当定义一个虚析构函数，如果我们不这样做，则delete一个指向派生类对象的基类指针将产生未定义的行为。Why？这正是因为**动态绑定**所致：
 
-```c++
+```cpp
 Quote *itemP = new Quote;	// static type = dynamic type
 delete itemP;				// call Quote's dtor
 itemP = new Bulk_quote;		// static type != dynamic type
@@ -3398,19 +3405,19 @@ delete itemP;				// call Bulk_quote's dtor
 
 由于指针的静态类型和被删除对象的动态类型可能不一致，我们通过将基类的析构函数设置为虚函数来保证**delete基类指针**时运行正确的析构函数版本。
 
-需要注意的是，因为基类始终需要一个虚析构函数，但是该析构函数可能为空，我们无法判断此时究竟是否需要一个拷贝构造函数或者赋值运算符，故*Rule Of Three*此时并不适用。（*C++ Primer* P552）
+需要注意的是，因为基类始终需要一个虚析构函数，但是该析构函数可能为空，我们无法判断此时究竟是否需要一个拷贝构造函数或者赋值运算符，故*Rule Of Three*此时并不适用。（*cpp Primer* P552）
 
 需要注意的是，在继承关系中的析构函数的调用顺序与构造函数相反：**构造函数是先调用基类构造函数，再调用派生类构造函数；二析构函数是先析构派生类，再析构基类。并且，我们不需要显式调用基类的析构函数，系统会自动调用。**
 
 ##### Dynamic Binding
 
-什么是动态绑定？通俗地说，当我们在继承关系中，使用一个**基类的引用或者指针，调用一个虚函数时，将会发生动态绑定。** 为什么叫动态绑定？因为在编译时，程序并不清楚到底是需要基类的版本还是需要派生类的版本，**只有当运行时才能决定**， 所以被叫做动态绑定。从而，与`Dynamic Binding`相对应的就是**静态绑定**，也即在编译时即可确定的绑定关系----成员函数如果没有被声明为虚函数，则解析过程发生在编译时，如果我们参看静态绑定的汇编代码，会发现他只是简单的*call+address*的形式。根据*C++ Primer*：
+什么是动态绑定？通俗地说，当我们在继承关系中，使用一个**基类的引用或者指针，调用一个虚函数时，将会发生动态绑定。** 为什么叫动态绑定？因为在编译时，程序并不清楚到底是需要基类的版本还是需要派生类的版本，**只有当运行时才能决定**， 所以被叫做动态绑定。从而，与`Dynamic Binding`相对应的就是**静态绑定**，也即在编译时即可确定的绑定关系----成员函数如果没有被声明为虚函数，则解析过程发生在编译时，如果我们参看静态绑定的汇编代码，会发现他只是简单的*call+address*的形式。根据*cpp Primer*：
 
 > 表达式的**静态类型**在编译时已知，它是变量声明时的类型或者表达式生成的类型；而**动态类型**则是**变量或表达式表示的内存中的对象类型**。基类的指针或者引用的静态类型与动态类型可能不一样。
 
 我们通过两个例子体会上面的内容：
 
-```c++
+```cpp
 double print_total(const Quote &item) {
     double ret = item.net_price(n);
 }
@@ -3430,7 +3437,7 @@ double print_total(const Quote &item) {
 
 关于类型转换，我们还需要注意，**不存在从基类向派生类的隐式类型转换**：
 
-```c++
+```cpp
 Quote base;
 Bulk_quote* bulkP = &base;    //error, base->derive class
 Bulk_quote& bulkRef = base;   //error, base->derive class
@@ -3442,7 +3449,7 @@ Bulk_quote& bulkRef = base;   //error, base->derive class
 
 如果我们将基类指针转换为指向派生类的指针，则失败返回0；如果我们将积累引用转换为派生类的引用，则失败抛出**bad_cast**异常：
 
-```c++
+```cpp
 if (Derived *dp = dynamic_cast<Derived*>(bp)) {
     // use dp pointing to Derived
 }
@@ -3490,7 +3497,7 @@ void f(const Base &b) {
 
 按照我们先前对**非依赖性**的解释，即无需知道模板实参就可以完全确定类型的基类。他应该具备如下的样子：
 
-```c++
+```cpp
 template <typename X>
 class Base
 {
@@ -3504,11 +3511,11 @@ class D2 : public Base<double> // INdependent on template T
 {T strange; };
 ```
 
-**C++规定，派生类查找一个`非受限名称`时，会先在非依赖型基类(Base\<double>)中查找，然后才查找模板参数列表(template\<typename T>)**。所以上例中的`strange`是`Base<double>::T`而非模板定义中的`T`.
+**cpp规定，派生类查找一个`非受限名称`时，会先在非依赖型基类(Base\<double>)中查找，然后才查找模板参数列表(template\<typename T>)**。所以上例中的`strange`是`Base<double>::T`而非模板定义中的`T`.
 
 另一方面，对于**依赖性基类**：
 
-```c++
+```cpp
 template <typename T>
 class D2 : public Base<T> // dependent on template T
 {T strange; };
@@ -3516,7 +3523,7 @@ class D2 : public Base<T> // dependent on template T
 
 在**两阶段名称查找**中我们知道，对于模板中的**非依赖型名称**，将会在看到的**模板定义时进行查找**。
 
-```c++
+```cpp
 // This is a declaration
 template<typename X>
 class Base
@@ -3547,11 +3554,11 @@ void g(DD<bool>& d)
 }
 ```
 
-**但是C++规定，非依赖型名称不会在依赖型基类中进行查找，所以编译器会在`basefield = 0`处报错**。
+**但是cpp规定，非依赖型名称不会在依赖型基类中进行查找，所以编译器会在`basefield = 0`处报错**。
 
 那我们可以让这个变量成为**依赖性变量**：
 
-```c++
+```cpp
 // 修改方案1
 template <typename T>
 class DD1 : public Base<T>
@@ -3575,7 +3582,7 @@ class DD2 : public Base<T>
 
 或者我们也可以使用`using`语法以提供在实例化阶段进行名称查找的机制：
 
-```c++
+```cpp
 // 修改方案3:重复的限定让代码不雅观，可以在派生类中只引入依赖型基类
 template <typename T>
 class DD3 : public Base<T>
@@ -3590,7 +3597,7 @@ class DD3 : public Base<T>
 
 ### RAII
 
-`RAII`是**C++**的一种重要机制。什么是`RAII`？中文翻译为资源获取即初始化–使用局部对象来管理资源的技术。他还有几个名字，比如**SBRM**（`Scope Based Resource Management`），**CADRE**（`Constructor Acquires, Destructor Releases`）。这样做有什么好处？根据下图所示的例子：
+`RAII`是**cpp**的一种重要机制。什么是`RAII`？中文翻译为资源获取即初始化–使用局部对象来管理资源的技术。他还有几个名字，比如**SBRM**（`Scope Based Resource Management`），**CADRE**（`Constructor Acquires, Destructor Releases`）。这样做有什么好处？根据下图所示的例子：
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/image-20211130190336216.png" alt="image-20211130190336216" style="zoom:50%;" />
 
@@ -3604,9 +3611,9 @@ class DD3 : public Base<T>
 
 **RAII**机制在多处都有体现，包括我们经常使用的`new`与`delete`过程，以及：
 
-- 文件的打开与关闭-**C++**内部为我们提供了具备**RAII**机制的文件处理操作：
+- 文件的打开与关闭-**cpp**内部为我们提供了具备**RAII**机制的文件处理操作：
 
-```c++
+```cpp
 // DO NOT WRITE IN THIS WAY:
 {
     ifstream input();
@@ -3625,7 +3632,7 @@ class DD3 : public Base<T>
 
 - multithreading
 
-```c++
+```cpp
 // NO NO NO
 void cleanDatabase (mutex& databaseLock, map<int, int>& database) {
     databaseLock.lock();
@@ -3652,13 +3659,13 @@ private:
 }
 ```
 
-正是基于**RAII**的这种想法，**C++**引入了智能指针（`Smart Pointers`）.在介绍智能指针之前，我们先来了解一下`new`与`delete`关键字是如何工作的。
+正是基于**RAII**的这种想法，**cpp**引入了智能指针（`Smart Pointers`）.在介绍智能指针之前，我们先来了解一下`new`与`delete`关键字是如何工作的。
 
 ### new & delete
 
 当我们写出如下的代码时，程序实际上在做什么？
 
-```c++
+```cpp
 Complex* pc = new Complex(1, 2);
 String* str = new String("Hello");
 ```
@@ -3669,7 +3676,7 @@ String* str = new String("Hello");
 
 - **分配内存**->使用`operator new`的内置函数
 
-```c++
+```cpp
 String* str;
 void* mem = operator new(sizeof(String));
 ```
@@ -3678,13 +3685,13 @@ void* mem = operator new(sizeof(String));
 
 - **转型**->使用`static_cast`
 
-```c++
+```cpp
 str = static_cast<String*>(mem);
 ```
 
 - **使用构造函数**
 
-```c++
+```cpp
 str->String::String("Hello");
 ```
 
@@ -3701,7 +3708,7 @@ str->String::String("Hello");
 
 当然，由于构造函数的行为是由我们自己定义的，如果我们设计的是`Complex`对象，情况有所不同：
 
-```c++
+```cpp
 Complex* pc;
 pc->Complex::Complex(1, 2);
 ```
@@ -3710,14 +3717,14 @@ pc->Complex::Complex(1, 2);
 
 如果我们提供了一个括号包围的初始化器，就可以使用`auto`，但仅当括号中有单一初始化器时才可以这样使用：
 
-```c++
+```cpp
 auto p1 = new auto(obj); // OK
 auto p2 = new auto{a, b ,c}; // error
 ```
 
 我们还可以使用`new`分配一个`const`对象：
 
-```c++
+```cpp
 const int *pc1 = new const int(1024);
 ```
 
@@ -3733,13 +3740,13 @@ const int *pc1 = new const int(1024);
 
 - **调用析构函数**
 
-```c++
+```cpp
 String::~String(str);
 ```
 
 而在析构函数内部，我们定义了如何释放给入的字符串（`char`数组）的内存：
 
-```c++
+```cpp
 ~String() {
     delete [] m_data;
 }
@@ -3747,7 +3754,7 @@ String::~String(str);
 
 - **释放对象内存->使用内置的`operator delete`函数**
 
-```c++
+```cpp
 operator delete(str);
 ```
 
@@ -3783,7 +3790,7 @@ operator delete(str);
 
 这两个函数的重载可以作为全局重载，也可以放在`class`内部进行重载。在`name lookup`那一节我们提到过，如果`::`左侧没有东西，那么默认在`globalscope`或者由`using`引入的命名空间中寻找名称，我们可以借助这一点来去区分到底是使用类中的重载`operator new`还是全局的`operator new`:
 
-```c++
+```cpp
 // look for members, if no member, use global one
 Foo* pf = new Foo;
 // force to use the global one
@@ -3807,7 +3814,7 @@ Foo* pf = ::new Foo;
 
 我们可以检测智能指针是否为空：
 
-```c++
+```cpp
 if (p1 && p1->empty()) {
     // do something
 }
@@ -3815,7 +3822,7 @@ if (p1 && p1->empty()) {
 
 最安全的分配和使用动态内存的方法是调用`make_shared`:
 
-```c++
+```cpp
 // we can use auto here
 auto p = make_shared<string>(10, '9');
 ```
@@ -3837,7 +3844,7 @@ auto p = make_shared<string>(10, '9');
 
 - 接受指针参数的智能指针构造函数是`explicit`的，这意味着我们不能将一个内置指针形式隐式转化为智能指针，**必须使用直接初始化**：
 
-```c++
+```cpp
 shared_ptr<int> p1 = new int(3); // error
 shared_ptr<int> p2(new int(3)); // OK
 
@@ -3848,9 +3855,9 @@ shared_ptr<int> clone(int p) {
 
 - **不要混合使用智能指针和普通指针**
 
-如何理解这句话？在*C++ Primer*中给出了清晰的解释：
+如何理解这句话？在*cpp Primer*中给出了清晰的解释：
 
-```c++
+```cpp
 // a function
 void process(shared_ptr<int> p) {
     // do something
@@ -3859,21 +3866,21 @@ void process(shared_ptr<int> p) {
 
 当我们面对上边的函数时，正确的传参做法是什么？应当是传递一个非临时对象的`shared_ptr`给该函数：
 
-```c++
+```cpp
 shared_ptr<int> ptr(new int(3));
 process(ptr);
 ```
 
 需要注意，我们不能给该函数传递一个普通指针！因为无法隐式转换：
 
-```c++
+```cpp
 int *ptr = new int(3);
 process(ptr);
 ```
 
 并且，我们不应该给函数传入一个**临时对象**的`shared_ptr`，这样做会导致函数结束后，对应的内存被释放：
 
-```c++
+```cpp
 int *x = new int(3);
 process(shared_ptr<int> ptr(x));
 int j = *x; // oop, x is a dangling pointer
@@ -3883,7 +3890,7 @@ int j = *x; // oop, x is a dangling pointer
 
 因为这样做我们**会创建两个独立的指向同一块内存区域的`shared_ptr`**:
 
-```c++
+```cpp
 shared_ptr<int> p(new int(42));
 int *q = p.get();
 // undefined:
@@ -3896,7 +3903,7 @@ shared_ptr<int>(q);
 
 `reset`会更新计数器，如果需要会释放对象：
 
-```c++
+```cpp
 p = new int(1024);
 p.reset(new int(3));
 ```
@@ -3917,7 +3924,7 @@ auto ptr = std::make_unique<int>(...);
 
 但我们可以使用`reset`或者`release`操作转移指针控制权：
 
-```c++
+```cpp
 unique_ptr<string> p2(p1.release());
 ```
 
@@ -3929,7 +3936,7 @@ unique_ptr<int> pInt3(std::move(pInt2));
 
 `release`返回当前的`unique_ptr`保存的指针并将其置空，并将`p1`的控制权转移给`p2`.
 
-```c++
+```cpp
 p3.reset(p2.release());
 ```
 
@@ -3937,11 +3944,11 @@ p3.reset(p2.release());
 
 > exception:
 >
-> 不能拷贝`unique_ptr`的规则有一个例外，我们可以拷贝或者赋值一个行将销毁的`unique_ptr`，即作为函数的返回值处理，见*C++ Primer* P418. 个人猜测是因为编译器的*RVO*与*NRVO*机制导致允许我们这么做。
+> 不能拷贝`unique_ptr`的规则有一个例外，我们可以拷贝或者赋值一个行将销毁的`unique_ptr`，即作为函数的返回值处理，见*cpp Primer* P418. 个人猜测是因为编译器的*RVO*与*NRVO*机制导致允许我们这么做。
 
 标准库也提供给我们管理`new`分配数组的`unique_ptr`版本，我们需要在原先的基础上加一个方括号：
 
-```c++
+```cpp
 unique_ptr<int[]> up(new int(10));
 up.release(); // use delete[]
 ```
@@ -3962,19 +3969,19 @@ up.release(); // use delete[]
 
 一个函数：
 
-```c++
+```cpp
 bool foo(const string&, cosnt string&);
 ```
 
 函数指针–一个指向函数的指针：
 
-```c++
+```cpp
 bool (*pf)(const string&, const string&);
 ```
 
 > 需要注意的是，第一个括号是必须的，否则我们相当于**声明了一个函数，其返回值为`bool*`**:
 >
-> ```c++
+> ```cpp
 > bool *pf(const string&, const string&);
 
 那么我们如何理解函数指针的形式？首先，存在`*`说明`pf`是一个指针，其次它指向的是一个返回类型为`bool`的，参数类型为两个`const string`引用的函数。
@@ -3983,7 +3990,7 @@ bool (*pf)(const string&, const string&);
 
 在使用函数指针时，`&`与`*`号往往是可选的，编译器会帮助我们自动转换，但为了满足指针调用的*一致性*，我们习惯于加上这两个符号：
 
-```c++
+```cpp
 pf = foo;
 pf = &foo; // the same
 
@@ -3993,7 +4000,7 @@ pf("1", "2");
 
 ##### As parameters
 
-```c++
+```cpp
 void useBigger(bool pf(const string&, const string& ));
 void useBigger(bool (*pf)(const string&, const string& )); // the same
 ```
@@ -4008,7 +4015,7 @@ void useBigger(bool (*pf)(const string&, const string& )); // the same
 
 于是我们可以有如下代码：
 
-```c++
+```cpp
 using F = int(int*, int);
 F f(int);
 ```
@@ -4017,21 +4024,21 @@ F f(int);
 
 那么如果我们想要一个函数返回一个函数指针，该如何表示呢？根据我们定义函数指针格式的经验，应当这么写：
 
-```c++
+```cpp
 int (*) (int*, int);
 ```
 
 所以，如果现在我们要直接声明一个函数，该函数**返回一个函数指针**，形式是这样：
 
-```c++
+```cpp
 int (*foo(int, int)) (int*, int);
 ```
 
 从内而外的分析，因为`foo`有一个形参列表，所以`foo`是一个函数，前边有`*`所以返回一个指针，该指针具备函数的形式：返回类型为`int`，接受参数为`int*, int`，所以是一个函数指针。故函数`foo`返回一个函数指针。
 
-当然，根据**C++11**提供的语法，我们还可以这样写：
+当然，根据**cpp11**提供的语法，我们还可以这样写：
 
-```c++
+```cpp
 auto f1(int)->int(*)(int*, int);
 ```
 
@@ -4041,14 +4048,14 @@ auto f1(int)->int(*)(int*, int);
 
 在声明数组时，我们一定要区分数组指针和指针数组的区别：
 
-```c++
+```cpp
 int *p1[10]; //p1 is an array, which has 10 pointers that pointing to int.
 int (*p1)[10]; // p1 is a pointer, pointing to an array which has 10 ints.
 ```
 
 所以如果我们想声明一个返回数组指针的函数，该怎么做？有了之前返回函数指针的经验，这里也就不难理解了：
 
-```c++
+```cpp
 int (*func(int i))[10];
 ```
 
@@ -4058,13 +4065,13 @@ int (*func(int i))[10];
 
 同样地，我们也可以使用**尾置返回类型**：
 
-```c++
+```cpp
 auto func(int i) -> int(*)[10];
 ```
 
 函数指针数组的定义方式，也很好理解了：
 
-```c++
+```cpp
 int(*pf[10])(int*, int);
 ```
 
@@ -4076,14 +4083,14 @@ int(*pf[10])(int*, int);
 
 这里记录几点容易混淆和误判的使用方法：
 
-```c++
+```cpp
 typedef double wages; // wages is a type alias of double
 typedef wages base, *p; // ???
 ```
 
 这里，在第二行代码中，我们需要注意，`p`是`double*`的类型别名！
 
-```c++
+```cpp
 typedef char *pstring; // the same as above
 ```
 
@@ -4091,7 +4098,7 @@ typedef char *pstring; // the same as above
 
 另外，对于数组的使用：
 
-```c++
+```cpp
 typedef int arrs[10];
 ```
 
@@ -4099,13 +4106,13 @@ typedef int arrs[10];
 
 ##### function & function pointers
 
-```c++
+```cpp
 typedef bool func(const string&, const string&);
 ```
 
 这里的`func`是一个函数类型的`type alias`。
 
-```c++
+```cpp
 typedef bool (*func)(const string&, const string&)
 ```
 
@@ -4121,7 +4128,7 @@ typedef bool (*func)(const string&, const string&)
 
 需要注意的是，`decltype`关键字返回的是**类型**，这意味着对于如下代码：
 
-```c++
+```cpp
 int foo(int i) {
     // do something
 }
@@ -4130,7 +4137,7 @@ decltype(foo(3));
 
 我们会得到返回值类型，而对于
 
-```c++
+```cpp
 int foo(int i) {
     // do something
 }
@@ -4139,19 +4146,19 @@ decltype(foo);
 
 我们得到的是**函数类型**！表示出来是：
 
-```c++
+```cpp
 int(int);
 ```
 
 于是我们可以将`typedef`与`decltype`结合来表示函数指针：
 
-```c++
+```cpp
 typedef decltype(foo) *ptr;
 ```
 
 对于数组也是一样，他只会返回数组类型，我们想要指针，则需要一个`*`：
 
-```c++
+```cpp
 int odd[] = {1,2,3,4,5};
 int even[] = {6,7,8,9,10};
 decltype(odd) *arrPtr(int i) {
@@ -4161,19 +4168,19 @@ decltype(odd) *arrPtr(int i) {
 
 在这里，`decltype`返回的是一个指向含有5个整型数据的数组的**类型**，此后我们把他的指针传递回去，即：
 
-```c++
+```cpp
 int(*)[5];
 ```
 
 需要注意的是，在上边的例子中，`odd`与`&odd`是不一样的，如果在上例中不加`&`，我们会得到编译器报错：
 
-```c++
+```cpp
 cannot convert ‘int*’ to ‘int (*)[5]’ in return
 ```
 
 也就是说，虽然数组名也是一个指针，但他是一个`int*`的指针，但`&odd`是指向整个数组的指针，这两者的区别就好比省政府和省会市政府，虽然都在同一个位置，地址是一样的，但是他们的意义完全不同：
 
-```c++
+```cpp
 *odd; // 1
 *(&odd); // the same as above
 
