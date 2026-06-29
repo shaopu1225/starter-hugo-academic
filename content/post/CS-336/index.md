@@ -114,3 +114,31 @@ class BPETokenizer(Tokenizer):
 
 ## Resource Accounting
 
+### Einops
+
+- motivation: 因为使用普通的pytorch矩阵行列变换操作很容易出错，einops方便我们对dimension进行操作；
+
+```python
+x = torch.ones(3, 4)
+y = torch.ones(4, 3)
+
+# --- sum ---
+z = x @ y
+# 等价于
+z = einsum(x, y, "seq1 hidden, hidden seq2 -> seq1 seq2")
+
+z = x @ y.transpose(-2, -1)
+# 等价于 (或者手动将...写成'batch')
+z = einsum(x, y, "... seq1 hidden, ... seq2 hidden -> ... seq1 seq2")
+
+# --- reduce ---
+y = x.sum(dim=-1)
+# 等价于
+y = reduce(x, "...hidden -> ...", "sum")
+
+# --- rearrange ---
+# (3, 8) -> (3, 2, 4)，或者反过来也可以
+x = rearrange(x, "...(heads hidden1) -> ... heads hidden1", heads=2)
+
+```
+
