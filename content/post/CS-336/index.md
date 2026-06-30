@@ -194,7 +194,27 @@ bytes: 2nn+2nn+2nn
 
 Flops: nn(2n-1)
 
-是一个compute bound的操作。
+只要matrix足够大，就是一个compute bound的操作。
+
+> 为什么推理过程是memory bound的？因为推理大多做的是matrix-vector multiplication.
+>
+> ```python
+>     n = 1024
+>     x = torch.ones(n, dtype=torch.bfloat16, device=cuda_if_available())
+>     w = torch.ones(n, n, dtype=torch.bfloat16, device=cuda_if_available())
+>     y = x @ w
+>     bytes = (2 * n) + (2 * n * n) + (2 * n)  # Read x, read w, write y
+>     flops = n * (2 * n - 1)  # n dot-products
+>     arithmetic_intensity = flops / bytes  # ~1 
+> ```
+> 
+>H100_accelerator_intensity >> arithmetic intensity
+
+#### roofline plots
+
+<img src="/Users/bytedance/Desktop/tool-code-lib/blog_repo/starter-hugo-academic/content/post/CS-336/image-20260630171554556.png" alt="image-20260630171554556" style="zoom:50%;" />
+
+## Architecture
 
 
 
