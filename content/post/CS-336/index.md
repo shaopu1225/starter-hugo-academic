@@ -212,11 +212,63 @@ Flops: nn(2n-1)
 
 #### roofline plots
 
-<img src="/Users/bytedance/Desktop/tool-code-lib/blog_repo/starter-hugo-academic/content/post/CS-336/image-20260630171554556.png" alt="image-20260630171554556" style="zoom:50%;" />
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-06-30-142651.png" alt="image-20260630171554556" style="zoom:50%;" />
 
 ## Architecture
 
+### Layernorm
 
+#### Pre-vs-post norm
 
+将$x_i$->$x_{i+1}$的通路称为residual stream，目前主流的方法是右侧的pre-norm，即在mha和FFN之前做layer norm. 因为不在residual stream上，所以也被称为non-residual norm.
 
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-06-30-144243.png" alt="image-20260630224243612" style="zoom: 50%;" />
+
+优势：
+
+- 即使不经过warmup，也可以有相比post-norm更好的稳定性，更少的gradient spike现象。
+
+现在还有一种方法是在计算之后也加上layernorm：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-06-30-144922.png" alt="image-20260630224921419" style="zoom:50%;" />
+
+也被叫做double norm.
+
+#### Layernorm vs. RMSNorm
+
+观察这两者的公式区别：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-06-30-151120.png" alt="image-20260630231120523" style="zoom:50%;" />
+
+RMSNorm相比layernorm，有着更少的操作（不需要计算mean）和更少的参数（没后bias term），事实上这两个diff对性能的提升至关重要：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-06-30-151325.png" alt="image-20260630231325814" style="zoom:50%;" />
+
+可以看到虽然normalization和element-wise的bias term计算的flop很少，但是占用的时间却很长。
+
+> 在现代的LLM transformer架构中，bias term也经常是没有的.
+
+### Activations
+
+一个architecture设计的经验之谈：gating往往很有帮助；其实就是一个矩阵乘法。
+
+比如在activation的设计中，从relu到**GLU的演化就是多了一个gate function:
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-06-30-155855.png" alt="image-20260630235855229" style="zoom:50%;" />
+
+各种GLU的不同就在于新增加的参数矩阵V的选择的不同，对于目前最通用的SwiGLU，选择的是一个$sigmoid(x)$:
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-06-30-155954.png" alt="image-20260630235954155" style="zoom:50%;" />
+
+这里的一个小细节是为了让总参数量和之前一样（因为增加了一个新的权重矩阵v），对dim需要进行缩减。
+
+### Serial vs. Parallel layers
+
+GPTJ ,PaLM, GPT-NeoX等模型提出了将原本序列化运算的transformer结构改造成parallel的：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-06-30-160636.png" alt="image-20260701000635971" style="zoom:50%;" />
+
+但目前不常用。
+
+### ROPE
 
