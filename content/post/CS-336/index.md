@@ -142,3 +142,61 @@ x = rearrange(x, "...(heads hidden1) -> ... heads hidden1", heads=2)
 
 ```
 
+### Flops of matmul operation
+
+x: (B, D), w: (D, K) 每个位置包含一次加法和乘法，故flops为$2*BDK$
+
+- B是点的数量
+- (DK)是参数的数量
+
+那么对于一次前向的矩阵乘法，flops就是$2\*tokens\*params$，也是前边整体flops计算公式的由来。
+
+### MFU
+
+MFU: Model FlOPS Utilization = actual flop_per_second / promised flop_per_second
+
+> promised flop per second: 可以在设备指标中找到
+
+一般大于等于0.5的MFU就算是很好了.
+
+#### arithmetic intensity
+
+两个组件：计算单元& memory，所以计算耗时取决于两个因素：
+
+1. Accelerator speed (FLOP/s)
+2. memory bandwith (bytes/s)
+
+衡量程序是compute boundh还是memory bound有两种方法：
+
+首先可以比较communication time和compute time：
+
+- communication time: bytes / h100_bytes_per_second
+- compute time: flops / h100_flop_per_second
+
+我们假设通信和计算可以overlap，那么：
+
+- memory bound: communication time > compute time
+- compute bound: compute time > communication time
+
+另一种等价的衡量方式：
+
+- Accelarator intensity: h100_flop_per_second / h100_bytes_per_second
+- Arithmetic intensity: flops / bytes
+
+那么：
+
+- memory bound: Accelerator intensity > arithmetic intensity
+- compute bound: Arithmetic intensity > accelerator intensity
+
+##### example: matmul
+
+bytes: 2nn+2nn+2nn
+
+Flops: nn(2n-1)
+
+是一个compute bound的操作。
+
+
+
+
+
