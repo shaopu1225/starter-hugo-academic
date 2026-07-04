@@ -270,5 +270,72 @@ GPTJ ,PaLM, GPT-NeoX等模型提出了将原本序列化运算的transformer结�
 
 但目前不常用。
 
-### ROPE
+### 位置编码
+
+参考资料：
+
+> - https://kazemnejad.com/blog/transformer_architecture_positional_encoding/
+> - https://zhuanlan.zhihu.com/p/721032991
+> - https://spaces.ac.cn/archives/8231
+> - https://zhuanlan.zhihu.com/p/642884818
+> - https://mp.weixin.qq.com/s/-1xVXjoM0imXMC7DKqo-Gw
+> - https://kexue.fm/archives/8265/comment-page-2
+
+- 为什么要有位置编码？
+
+因为attention结构本身无法捕捉token顺序。
+
+位置编码有以下几个要求：
+
+1. 能够表示一个token在序列中的绝对位置；
+2. 能够用绝对位置表示token间的相对位置；
+3. 具有外推性，即可以表示模型在训练过程中没有见过的长度；
+
+#### Sinusoidal位置编码
+
+正余弦位置编码的思路来自于位置本身的二进制表示，提供了一种有界又连续的编码方法：
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-03-145206.png" alt="Sinusoidal position encoding" style="zoom:50%;" />
+
+- 为什么$\omega_k = \frac{1}{10000^{2k / d}}$?
+
+为了满足设想：相关距离越远的embedding，相关性应该越小；也即远程衰减性：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-03-145552.png" alt="image-20260703225551965" style="zoom:50%;" />
+
+- 绝对位置编码如何表达相对位置信息？
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-03-145704.png" alt="image-20260703225703942" style="zoom:50%;" />
+
+#### ROPE
+
+对于二维向量：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-03-150032.png" alt="image-20260703230032401" style="zoom:50%;" />
+
+即在向量上乘上一个旋转矩阵，同样地对于多偶数维向量，可以将其两两分组(注意这里的$\theta$对每个d的值是不同的)，我们接下来会证明为什么这个形式是可以表达相对位置信息的；
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-03-150123.jpg" alt="Image" style="zoom:50%;" />
+
+上式中的旋转矩阵十分稀疏，为了节省算力，可以以下面的方式等效实现：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-03-150253.jpg" alt="Image" style="zoom:50%;" />
+
+- ROPE是如何用绝对位置编码表示相对位置信息的？
+
+我们考察二维下的ROPE，注意到其相当于在embedding上乘了一个旋转矩阵，设旋转矩阵为$R$，那我们尝试证明：
+
+$$<R_aX,R_bY>=<X,R_{b-a}Y>$$
+
+注意到旋转矩阵的性质：
+
+1. $$R_a^T=R_{-a}$$
+2. $$R_aR_b=R_{a+b}$$
+
+则：
+
+$$<R_aX,R_bY>=(R_aX)^TR_bY=X^TR_a^TR_bY=X^TR_{b-a}Y=<X,R_{b-a}Y>$$
+
+那么对于高维向量，由于内积具有线性性质，即$<a,b>=a_0b_0+a_1b_1+a_2b_2+a_3b_3+...=<a^0,b^0>+<a^1b^1>+...$，其中$a^0=[a_0,a_1]$，以此类推；所以将高维向量做两两分组并分别应用旋转矩阵后，上述在二维空间推导出的性质仍然成立。
+
+- 
 
