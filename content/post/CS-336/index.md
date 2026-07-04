@@ -309,6 +309,8 @@ GPTJ ,PaLM, GPT-NeoX等模型提出了将原本序列化运算的transformer结�
 
 #### ROPE
 
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-04-081015.png" alt="image-20260704161015309" style="zoom:50%;" />
+
 对于二维向量：
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-03-150032.png" alt="image-20260703230032401" style="zoom:50%;" />
@@ -344,5 +346,35 @@ $$<R_aX,R_bY>=(R_aX)^TR_bY=X^TR_a^TR_bY=X^TR_{b-a}Y=<X,R_{b-a}Y>$$
 
 本质上是因为旋转矩阵的存在，让位置编码具备了**周期性**和**远程衰减性**，这两个性质允许我们做类似线性插值（将推理时没有见过的旋转角度恢复到训练时见过的角度范围内），以及后续的优化高频信息的NTK插值等方法，通过缩小旋转弧度$m\theta_i$达到长度扩展的目的，具体参见参考文章的最后一篇内容。
 
+### Hyperparameters
 
+- **Feedforward-model dimension ratio**
+
+对transformer中的FFN层的一般形式：
+
+$$FFN(x)=max(0,xW_1+b_1)W_2+b_2$$
+
+一般都有$d_{ff}=4d_{model}$或者$d_ff=2.66d_{model}$.
+
+- **Head_dim * num_heads to model-dim ratio**
+
+基本会保持model dim是head dim * num_heads的整数倍，大部分是1:
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-04-083633.png" alt="image-20260704163633057" style="zoom:50%;" />
+
+- **Aspect ratios**
+
+表征模型的宽度和深度的比值，主要考量在于如果模型过深，可能需要通过PP来做并行切分，对性能有影响，对效果的影响则并非主要因素。大部分模型的d_model / n_layer都在100左右：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-04-083801.png" alt="image-20260704163801561" style="zoom:50%;" />
+
+- **vocab sizes**
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-04-084129.png" alt="image-20260704164129615" style="zoom:50%;" />
+
+- **Dropout and other regularization**
+
+在预训练时，因为有很多数据，同时SGD只在语料库上跑一遍，所以想要overfit不太容易，所以有weight decay和dropout的必要吗？大部分现代LLM仍然会做dropout & weight decay，但其目的并非为了防止overfitting，而是在动态优化上（比如和lr decay结合给模型带来的收敛加速）上有优势：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-04-085857.png" alt="image-20260704165856943" style="zoom:50%;" />
 
