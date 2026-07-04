@@ -280,6 +280,7 @@ GPTJ ,PaLM, GPT-NeoX等模型提出了将原本序列化运算的transformer结�
 > - https://zhuanlan.zhihu.com/p/642884818
 > - https://mp.weixin.qq.com/s/-1xVXjoM0imXMC7DKqo-Gw
 > - https://kexue.fm/archives/8265/comment-page-2
+> - https://mp.weixin.qq.com/s?__biz=MzA3MTgwODE1Ng==&mid=2247484826&idx=1&sn=8935f0bcb2e09f438cbf3ae63825d671&chksm=9f26a069a851297f568ba7cd111082e603108716928b8444a253457233f24d09d3a18447d6b9&cur_album_id=3199751010206973953&scene=189#wechat_redirect
 
 - 为什么要有位置编码？
 
@@ -320,6 +321,8 @@ GPTJ ,PaLM, GPT-NeoX等模型提出了将原本序列化运算的transformer结�
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-03-150253.jpg" alt="Image" style="zoom:50%;" />
 
+上述公式里$\theta$的取值可以复用先前正余弦位置编码的方法，同样带来一定的远程衰减性。
+
 - ROPE是如何用绝对位置编码表示相对位置信息的？
 
 我们考察二维下的ROPE，注意到其相当于在embedding上乘了一个旋转矩阵，设旋转矩阵为$R$，那我们尝试证明：
@@ -337,5 +340,9 @@ $$<R_aX,R_bY>=(R_aX)^TR_bY=X^TR_a^TR_bY=X^TR_{b-a}Y=<X,R_{b-a}Y>$$
 
 那么对于高维向量，由于内积具有线性性质，即$<a,b>=a_0b_0+a_1b_1+a_2b_2+a_3b_3+...=<a^0,b^0>+<a^1b^1>+...$，其中$a^0=[a_0,a_1]$，以此类推；所以将高维向量做两两分组并分别应用旋转矩阵后，上述在二维空间推导出的性质仍然成立。
 
-- 
+- ROPE为何具有外推性？
+
+本质上是因为旋转矩阵的存在，让位置编码具备了**周期性**和**远程衰减性**，这两个性质允许我们做类似线性插值（将推理时没有见过的旋转角度恢复到训练时见过的角度范围内），以及后续的优化高频信息的NTK插值等方法，通过缩小旋转弧度$m\theta_i$达到长度扩展的目的，具体参见参考文章的最后一篇内容。
+
+
 
