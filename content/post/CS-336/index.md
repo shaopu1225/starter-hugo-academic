@@ -378,3 +378,62 @@ $$FFN(x)=max(0,xW_1+b_1)W_2+b_2$$
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-04-085857.png" alt="image-20260704165856943" style="zoom:50%;" />
 
+### stability issue
+
+#### Softmax
+
+- **Output softmax stability - z-loss**
+
+通过增加一个z-loss的正则化项，因为我们在尝试最小化loss，所以这样可以让Z(X)贴近1，从而达到稳定Z(x)的目的.
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-04-092836.png" alt="image-20260704172835678" style="zoom:50%;" />
+
+- **Attention softmax stability - QK norm**
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-04-093201.png" alt="image-20260704173201809" style="zoom:50%;" />
+
+#### Logit soft-capping
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-04-093328.png" alt="image-20260704173328878" style="zoom:50%;" />
+
+### Attention heads
+
+除了以下几个例外，大部分模型对attention heads都不会有改动：
+
+- **GQA/MQA (Reduce attention head cost)**
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-04-180544.png" alt="image-20260705020544527" style="zoom:50%;" />
+
+以上图为例，计算操作的结果源于n<d，所以在projection和attention两个矩阵乘法中，前者占了上风，如果此时的场景换成长文本，即n >> d，那么结果应当为$O(bn^2d)$。
+
+上述场景发生在训练以及推理的prefill阶段中，但是在decode阶段，假设此时也有N个query token逐次进来：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-05-065501.png" alt="image-20260705145501075" style="zoom:50%;" />
+
+- arithmetic operations: 仍然是proj占据上风，n次的(b\*1\*d) @ (d\*d)，所以仍然是O(bnd^2);
+- total memory access: n次的(b\*n\*d)还有n次的对proj矩阵(d\*d)的访问;
+
+> 这里忽略了softmax的访存，因为比kv读取少一个n的量级，同时因为推理阶段没有backward，所以可以不把softmaxx结果写回HBM.
+
+在decode阶段的计算强度很低，最好需要大batch+短序列，或者模型dim很大，对于小模型不太友好，
+
+MQA正是为了解决上述痛点。
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-05-075942.png" alt="image-20260705155942416" style="zoom:50%;" />
+
+这里多出的第一项是对Q的读取，先前MHA没有列出来，是因为当时有$bn^2d$的存在。
+
+但是MQA的问题在于因为head太少，确实会丢失expressiveness (key-query ratio)，所以变成了GQA：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-05-080117.png" alt="image-20260705160117362" style="zoom:50%;" />
+
+> 在训练时repeat
+
+- **Sparse / sliding window attention**
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-05-081147.png" alt="image-20260705161146999" style="zoom:50%;" />
+
+现在比较流行的做法是在full attention和sparse attention之间交替。
+
+> Long-range info via NoPE, short-range info via RoPE + SWA.
+
