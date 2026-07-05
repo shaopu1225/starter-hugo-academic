@@ -437,3 +437,7 @@ MQA正是为了解决上述痛点。
 
 > Long-range info via NoPE, short-range info via RoPE + SWA.
 
+## Attention Alternatives and MOE
+
+### Linear attention 
+
