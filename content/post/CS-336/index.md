@@ -455,7 +455,9 @@ linear attention的优劣明显：
 
 - 劣势：不适合训练，因为无法并行：由于*casual mask*的存在，导致对每个Q token，不能使用一致的K\^TV矩阵，必须按照上边展示的那种kv逐次递增的方法来做。
 
-但是这种方案会有效果问题，所以在实际使用中，例如Minimax M1，使用了hybrid attention的方案，即interleave full attention和linear attention.
+但是这种方案会有效果问题，所以在实际使用中，例如Minimax M1，使用了hybrid attention的方案，即interleave full attention和linear attention，根据研究表明，两者比值并非线性关系，但有一些证据表明在较低的`linear/ratio`比值下，模型效果较好。
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-07-192541.png" alt="image-20260708032540641" style="zoom:50%;" />
 
 #### Lightening attention
 
@@ -470,3 +472,26 @@ linear attention的优劣明显：
 此外，采用了类似FA的cache策略，即做inter_ret + intra_ret的cumsum时，在SRAM中进行等。
 
 > Future Reading: https://www.zhihu.com/question/9740764576
+
+#### Mamba-2
+
+可以理解成在linear attention上加了一个**gating**：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-07-192142.png" alt="image-20260708032142530" style="zoom:50%;" />
+
+作用是**动态遗忘或保留历史信息，从而更有表达力**。
+
+> Nemotron 3使用了该方案.
+
+#### Gated delta net
+
+在mamba-2的基础上衍生而来，通过一个投影矩阵$k_tk^T_t$消除历史信息的影响：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-07-192329.png" alt="image-20260708032328809" style="zoom:50%;" />
+
+至于为什么该矩阵是一个`project out`的作用，可以参考投影矩阵对应的介绍资料，这里不再赘述。
+
+> Qwen 3.5 / Qwen Next使用了该方案.
+
+### Sparse adaptation
+
