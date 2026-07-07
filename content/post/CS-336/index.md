@@ -441,3 +441,32 @@ MQA正是为了解决上述痛点。
 
 ### Linear attention 
 
+Linear attention的核心思路是思考：如何将(QK\^T)V变成Q(K\^TV)，其好处在于将O(N\^2d_k+N\^2d_v)的计算复杂度降低到O(2N\*d_v\*d_k). 
+
+核心问题在于softmax不是一个满足结合律的操作，即做上述交换之后，效果不等价，所以当前linear attention会使用elu/silu等其他函数，具体细节可以参考网上的其他文章。
+
+linear attention的优劣明显：
+
+- 优势：降低计算复杂度，适合推理，原因：可以表示成类似RNN的形式：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-07-143749.png" alt="image-20260707223748868" style="zoom:50%;" />
+
+因为推理时的token是逐个喂进来的，所以这种串行形式适合推理。
+
+- 劣势：不适合训练，因为无法并行：由于*casual mask*的存在，导致对每个Q token，不能使用一致的K\^TV矩阵，必须按照上边展示的那种kv逐次递增的方法来做。
+
+但是这种方案会有效果问题，所以在实际使用中，例如Minimax M1，使用了hybrid attention的方案，即interleave full attention和linear attention.
+
+#### Lightening attention
+
+在linear attention的基础上，产生了lightening attention。
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-07-144631.jpg" alt="img" style="zoom:50%;" />
+
+其在linear attention的基础之上，融合了flash attention的想法，即将完整的token序列切成多个block，分段计算attention。
+
+对于每一个需要依赖先前pos 0-m (属于block1)的pos m+t (属于block2)，从0-m段的attention计算时，缓存中间结果K\^TV，并使用linear attention递推到第m位，这样做的好处在于对于长序列场景，前边的所有位置都降低到线性时间复杂度；这在方案中被称为inter block；而对于block2内部的[m+1, m+t)则仍然采用parallel形式的QK\^T做计算，充分利用tensor core加速，这在方案中被称为intra block。
+
+此外，采用了类似FA的cache策略，即做inter_ret + intra_ret的cumsum时，在SRAM中进行等。
+
+> Future Reading: https://www.zhihu.com/question/9740764576
