@@ -495,3 +495,43 @@ linear attention的优劣明显：
 
 ### Sparse adaptation
 
+典型例子：DSA：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-08-071933.png" alt="image-20260708151933116" style="zoom:50%;" />
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-08-071944.png" alt="image-20260708151944610" style="zoom:50%;" />
+
+虽然计算复杂度仍然是平方级别的，但因为有indexer的存在，导致复杂度的常数项小了很多，整体复杂度降低。
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-08-074344.png" alt="image-20260708154344081" style="zoom:50%;" />
+
+> 参考资料：https://zhuanlan.zhihu.com/p/1959636888123049941
+
+### MOE
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-08-090723.png" alt="image-20260708170723089" style="zoom:50%;" />
+
+老式的MOE做法是：
+
+先计算出所有expert的routing logits，过一层softmax，把softmax的输出结果作为topk的score，再将topk的结果作为gating function，但这种方法会导致最后topk的概率和不为1，所以在之后的模型结构中，大部分改为在topk之后，只在selected experts上做softmax。
+
+- **Shared experts**
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-08-153534.png" alt="image-20260708233533511" style="zoom:50%;" />
+
+对于shared expert能否提高效果，说法不一，但是将expert切的更细，即fine-grained expert。
+
+#### Train MOEs
+
+虽然sparsity带来了训练阶段的高效性，但因为gating+topk操作不可微分，这给通过正常的梯度下降更新带来了困难；所以训练MOE模型需要一些trick。
+
+- 使用强化学习更新门控策略: 可以做，但是太复杂，不常用；
+- 增加随机扰动项(`stochastic perturbations`)：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-08-174546.png" alt="image-20260709014546143" style="zoom:50%;" />
+
+- 启发式平衡loss(`Heuristic balancing losses`)
+
+
+
+一个典型例子是**switch transformer**.
