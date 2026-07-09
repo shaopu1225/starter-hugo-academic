@@ -532,6 +532,45 @@ linear attention的优劣明显：
 
 - 启发式平衡loss(`Heuristic balancing losses`)
 
+在原版的total loss基础上，增加一个辅助loss（`auxiliary loss`），目的：如果一个expert获得了过多的token，那么会压制接下来token选择该expert的概率。由两部分构成：
 
+$f_i$表示被路由到$E_i$的比例，$P_i$表示被路由到$E_i$的平均概率，那么：
 
-一个典型例子是**switch transformer**.
+$$loss=\alpha N \sum_{i=1}^N f_i P_i$$
+
+- 需要有f，因为被路由的概率只是一个软性的指标，不代表最后dispatch的结果；
+- 需要有p，因为f不可微分，需要p作为可微入口，将梯度回传router；
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-09-091518.png" alt="image-20260709171517384" style="zoom:50%;" />
+
+注意loss对$p_i(x)$的梯度为：$\frac{\alpha N}{T^2} \sum 1_{argmax\ p(x)=o}$，这意味着对某个expert更频繁的使用会导致梯度上升，从而对$p_i(x)$本身带来更强的压制（梯度下降更新）。
+
+> 一个典型例子是**switch transformer**.
+
+除了上述的**per-expert balancing**之外，DeepSeek V1-2还引入了**per-device balancing**，用来平衡不同device之间的负载：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-09-092900.png" alt="image-20260709172859481" style="zoom:50%;" />
+
+在DeepSeek-V3中，又引入了**per-expert biases**, 也被称为`auxiliary loss free balancing`（其实并不能完全做到loss free）：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-09-113357.png" alt="image-20260709193357310" style="zoom:50%;" />
+
+在打分结果上加上一个bias，对于接受token数量超过平均值的expert，降低bias，从而达到负载均衡的效果。
+
+在DS V3中，使用了MLA来做KV状态的压缩。从最本质上来看，优化思路和linear attention类似，即使用矩阵乘法结合律，减少KV cache；除此之外，再通过降维来缓解改变矩阵乘顺序之后带来的计算复杂度上升副作用。具体参考：
+
+- https://zhuanlan.zhihu.com/p/1911795330434986569
+- https://zhuanlan.zhihu.com/p/16730036197
+
+#### MOE stability
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-09-114545.png" alt="image-20260709194545150" style="zoom:50%;" />
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-09-114600.png" alt="image-20260709194600066" style="zoom:50%;" />
+
+#### other train methods
+
+- **Upcycling**
+
+使用预先训练好的dense模型，load到MOE模型上：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-09-114716.png" alt="image-20260709194716340" style="zoom:50%;" />
