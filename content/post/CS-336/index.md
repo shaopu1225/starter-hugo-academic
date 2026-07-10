@@ -557,10 +557,50 @@ $$loss=\alpha N \sum_{i=1}^N f_i P_i$$
 
 在打分结果上加上一个bias，对于接受token数量超过平均值的expert，降低bias，从而达到负载均衡的效果。
 
-在DS V3中，使用了MLA来做KV状态的压缩。从最本质上来看，优化思路和linear attention类似，即使用矩阵乘法结合律，减少KV cache；除此之外，再通过降维来缓解改变矩阵乘顺序之后带来的计算复杂度上升副作用。具体参考：
+##### MLA (Multi-Head Latent Attention)
 
-- https://zhuanlan.zhihu.com/p/1911795330434986569
-- https://zhuanlan.zhihu.com/p/16730036197
+在DS V3中，使用了MLA来做KV状态的压缩。
+
+- 先前的问题是什么？
+
+虽然KV cache这种**用空间换时间**（**存储换计算**）的方法，将计算复杂度从$O(N^2)$降低到了$O(N)$，但存在以下问题：
+
+1. kv cache的显存大小成为decoding瓶颈；
+2. 计算量的下降，让decoding过程成为memory bound；
+3. 为了提高计算强度，BS的增大又受到了1的制约；
+
+所以思考，能否存在一种**折中**方案？即沿用先前空间换时间的优化思路，但是不要那么激进？
+
+一个常用的改变计算强度的优化方法就是利用**矩阵结合律**，和`linear attention`类似：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-10-150510.png" alt="image-20260710230509865" style="zoom:50%;" />
+
+这种方法也被叫做**矩阵吸收**。经过改造后，原有的KV cache也被替代为：缓存前置的prefill的$N\times d$输入，即$X$. 
+
+但定量分析后会发现，减少的KV cache比例远低于增加的计算量。所以需要一些技巧来进一步压缩存储：即**降维X**：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-10-164505.jpg" alt="img" style="zoom:50%;" />
+
+这样节省的KV cache比例进一步增大，可以平衡带来的计算开销。$X^TW_{DKV}$就是论文中的$C$，也即需要缓存的压缩表示。
+
+矩阵吸收的另一个潜在好处是，假使前提是要缓存$C$，矩阵吸收增加的计算复杂度（相比缓存正常的KV cache）相比于计算$W_k^{'}$和$W_v^{'}$来恢复原本的$K$ $V$矩阵增加的计算复杂度更低。
+
+- 为什么training和prefill阶段不需要做矩阵吸收？
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-10-172340.png" alt="image-20260711012340264" style="zoom:50%;" />
+
+- ROPE是如何与MLA共存的？
+
+首先明确，为什么ROPE不能直接应用在MLA上？因为ROPE矩阵是一个和位置相关的矩阵，不是固定的，导致每次新的token都要重新计算，从而降低推理效率。
+
+解决方法：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-10-174336.png" alt="image-20260711014336160" style="zoom:50%;" />
+
+> 具体参考：
+>
+> - https://zhuanlan.zhihu.com/p/1911795330434986569
+> - https://zhuanlan.zhihu.com/p/16730036197
 
 #### MOE stability
 
