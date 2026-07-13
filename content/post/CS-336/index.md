@@ -214,6 +214,8 @@ Flops: nn(2n-1)
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-06-30-142651.png" alt="image-20260630171554556" style="zoom:50%;" />
 
+在前期，如果搬运每个byte所对应的计算操作很少，那么显然大部分资源都被浪费在memory上，而非计算单元内。
+
 ## Architecture
 
 ### Layernorm
@@ -627,6 +629,8 @@ TPU与GPU在很多设计上相似，核心区别在于其处理矩阵乘的单�
 
 ### Making GPUs go fast
 
+这里主要讨论如何优化memory pass。
+
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-13-114018.png" alt="image-20260713194018164" style="zoom:50%;" />
 
 - **Control divergence (not a memory issur)**
@@ -652,6 +656,27 @@ TPU与GPU在很多设计上相似，核心区别在于其处理矩阵乘的单�
 FP4省略。
 
 - **Operator fusion**
+
+- **recomputation**
+
+- **Memory coalescing and DRAM**
+- **tiling**
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-13-143823.png" alt="image-20260713223822361" style="zoom:50%;" />
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-13-145447.png" alt="image-20260713225447269" style="zoom:50%;" />
+
+#### wave quantization
+
+> 波量化（Wave Quantization）：**当计算任务超出GPU SM数量时，需要将计算任务分成多个waves进行执行，而这些wave被线性执行需要等待，导致性能下降**。
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-13-145557.png" alt="image-20260713225557436" style="zoom:50%;" />
+
+### Flash Attention
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-13-153008.png" alt="image-20260713233007674" style="zoom:50%;" />
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-13-153123.png" alt="image-20260713233122704" style="zoom:50%;" />
 
 
 
