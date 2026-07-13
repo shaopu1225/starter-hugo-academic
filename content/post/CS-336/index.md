@@ -614,3 +614,44 @@ $$loss=\alpha N \sum_{i=1}^N f_i P_i$$
 使用预先训练好的dense模型，load到MOE模型上：
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-09-114716.png" alt="image-20260709194716340" style="zoom:50%;" />
+
+## GPUs TPUs
+
+### TPU
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-13-092520.png" alt="image-20260713172519789" style="zoom:50%;" />
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-13-092536.png" alt="image-20260713172536163" style="zoom:50%;" />
+
+TPU与GPU在很多设计上相似，核心区别在于其处理矩阵乘的单元是一个大单元，而GPU是很多个小的tensor core单元来加速matmul的；同时两者对tensor core的定义不一样。
+
+### Making GPUs go fast
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-13-114018.png" alt="image-20260713194018164" style="zoom:50%;" />
+
+- **Control divergence (not a memory issur)**
+
+在同一时刻，同一warp中的所有线程处于同一代码段，如果不需要执行对应分支，则等待：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-13-114544.png" alt="image-20260713194544196" style="zoom:50%;" />
+
+- **Low precision computation**
+
+可以使用16bit(BF16/FP16)的操作：matrix ops、大部分pointwise操作（relu/add/sub/mul）；
+
+需要更高精度(FP32/FP16)的操作：reduction (sum/softmax/norm)，因为较小的值累加很容易出现rounding errors；
+
+需要使用更大range(FP32/BF16)的操作：返回结果比输入大很多的pointwise ops (exp, log, pow)，比如loss function；
+
+> FP8 training:
+>
+> <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-13-124957.png" alt="image-20260713204957283" style="zoom:50%;" />
+>
+> 因为transpose会改变数据排布，需要重新计算scaling，所以MXFP8在内部quantize时，会一次性得到两个矩阵，其中一个用于transpose。
+
+FP4省略。
+
+- **Operator fusion**
+
+
+
