@@ -682,9 +682,11 @@ FP4省略。
 
 ## Kernel, Triton, XLA
 
+### kernel basic concepts
+
 一些基本概念。
 
-### occupancy
+#### occupancy
 
 - Each thread can use between 0 and 255 registers.
 - The more registers threads use, the fewer threads can be scheduled on an SM (low occupancy).
@@ -707,13 +709,13 @@ num_warps = num_blocks * num_threads_per_block / 32
 occupancy = num_warps / max_warps
 ```
 
-### Bank Conflicts
+#### Bank Conflicts
 
 同一个warp中的每个线程对share mem访问的是同一个bank中的地址（不是完全一样的地址，否则会触发broadcast）：
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-14-074056.png" alt="image-20260714154056371" style="zoom:50%;" />
 
-### Memory coalescing
+#### Memory coalescing
 
 针对HBM：
 
@@ -726,7 +728,7 @@ When the 32 threads in a warp access HBM, memory accesses combined into transact
 Best case: full coalescing, all threads access the same cache line (32 threads x 4 bytes = 128 bytes).
 ```
 
-### Block occupancy
+#### Block occupancy
 
 ```python
     
@@ -737,5 +739,156 @@ B200 has 148 SMs, if we launch 160 thread blocks, first wave has 148 blocks, sec
 Wave quantization problem: last wave has fewer thread blocks, leaving some SMs idle (low block occupancy).
     
 Solution: make number of thread blocks divide # SMs.
+```
+
+### Profiling
+
+torch自带的profiler，示例：
+
+```python
+def profile(run: Callable, num_warmups: int = 1):
+    # Warmup
+    for _ in range(num_warmups):
+        run()
+    torch.cuda.synchronize()
+    # Run the code with the profiler
+    with torch.profiler.profile(activities=[ProfilerActivity.CUDA],
+            experimental_config=torch._C._profiler._ExperimentalConfig(verbose=True)) as prof:
+        run()
+        torch.cuda.synchronize()
+    # Print out table
+    table = prof.key_averages().table(sort_by="cuda_time_total",
+                                      max_name_column_width=100,
+                                      row_limit=10)
+    # Append to profiles.txt
+    with open("var/profiles.txt", "a") as f:
+        f.write(f"Profile at {time.ctime()}:\n")
+        f.write(table)
+        f.write("\n\n")
+    return table
+```
+
+### Triton
+
+指定thread block做什么。
+
+会将数据加载到shared memory中，再写回global memory。
+
+Element-wise example: 
+
+```python
+@triton.jit
+def triton_gelu_kernel(x_ptr, y_ptr, num_elements, BLOCK_SIZE: tl.constexpr):
+    # Input starts at `x_ptr`
+    # Output starts at `y_ptr`
+    # | T T T T T T T T | T T T T T T T T | T T T T T T T T | T T T T T T T T |
+    # |    Block 0      |    Block 1      |     Block 2      |    Block 3     |
+    pid = tl.program_id(axis=0)      # Identifies the block
+    start = pid * BLOCK_SIZE         # Starting index of this block
+    # Indices where this thread block should operate
+    offsets = start + tl.arange(0, BLOCK_SIZE)
+    # Don't read/write past the end of the tensor
+    mask = offsets < num_elements
+    # Read
+    x = tl.load(x_ptr + offsets, mask=mask)
+    # Approx gelu is 0.5 * x * (1 + tanh(sqrt(2/pi) * (x + 0.044715 * x^3)))
+    # Compute (tl.tanh doesn't exist, use tanh(a) = (exp(2a) - 1) / (exp(2a) + 1)
+    a = 0.79788456 * (x + 0.044715 * x * x * x)
+    exp = tl.exp(2 * a)
+    tanh = (exp - 1) / (exp + 1)
+    y = 0.5 * x * (1 + tanh)
+    # Store
+    tl.store(y_ptr + offsets, y, mask=mask)
+```
+
+triton经过compile后生成PTX.
+
+Row-wise Example:
+
+```python
+@triton.jit
+def triton_softmax_kernel(x_ptr, y_ptr, x_row_stride, y_row_stride, num_cols, BLOCK_SIZE: tl.constexpr):
+    assert num_cols <= BLOCK_SIZE
+    # Process each row independently
+    row_idx = tl.program_id(0)
+    col_offsets = tl.arange(0, BLOCK_SIZE)
+    # Read from global memory
+    x_start_ptr = x_ptr + row_idx * x_row_stride
+    x_ptrs = x_start_ptr + col_offsets
+    x_row = tl.load(x_ptrs, mask=col_offsets < num_cols, other=float("-inf"))
+    # Compute
+    x_row = x_row - tl.max(x_row, axis=0)
+    numerator = tl.exp(x_row)
+    denominator = tl.sum(numerator, axis=0)
+    y_row = numerator / denominator
+    # Write back to global memory
+    y_start_ptr = y_ptr + row_idx * y_row_stride
+    y_ptrs = y_start_ptr + col_offsets
+    tl.store(y_ptrs, y_row, mask=col_offsets < num_cols)
+```
+
+如果需要切分tile：
+
+```python
+@triton.jit
+def row_sum_kernel(x_ptr, out_ptr, N, BLOCK_SIZE: tl.constexpr):
+    row = tl.program_id(0)  # Which row are we processing?
+    # Accumulator for each thread
+    # One row: T1 T2 T3 T4 | T1 T2 T3 T4 | T1 T2 T3 T4 (N = 12, BLOCK_SIZE = 4)
+    acc = tl.zeros([BLOCK_SIZE], dtype=tl.float32)
+    # Loop over tiles
+    for start in range(0, N, BLOCK_SIZE):
+        cols = start + tl.arange(0, BLOCK_SIZE)
+        mask = cols < N
+        x = tl.load(x_ptr + row * N + cols, mask=mask, other=0.0)
+        acc += x
+    # Final reduction from BLOCK_SIZE (all threads) to a scalar
+    result = tl.sum(acc, axis=0)
+    tl.store(out_ptr + row, result)
+```
+
+Matmul example:
+
+```python
+@triton.jit
+def matmul_relu_kernel(
+    a_ptr, b_ptr, c_ptr,    # Compute c = a 
+    M, N, K,                # a is M x K, b is K x N, c is M x N
+    stride_am, stride_ak,   # How to navigate a
+    stride_bk, stride_bn,   # How to navigate b
+    stride_cm, stride_cn,   # How to navigate c
+    BLOCK_M: tl.constexpr,
+    BLOCK_N: tl.constexpr,
+    BLOCK_K: tl.constexpr,
+):
+    # We are working on the (m, n)-th tile
+    pid_m = tl.program_id(0)
+    pid_n = tl.program_id(1)
+    # Indices
+    indices_m = pid_m * BLOCK_M + tl.arange(0, BLOCK_M)  # Row indices of a [BLOCK_M]
+    indices_n = pid_n * BLOCK_N + tl.arange(0, BLOCK_N)  # Column indices of b [BLOCK_N]
+    indices_k = tl.arange(0, BLOCK_K)                    # Row indices of a = column indices of b [BLOCK_K]
+    # Initial matrix of pointers of a and b
+    a_ptrs = a_ptr + indices_m[:, None] * stride_am + indices_k[None, :] * stride_ak  # [BLOCK_M, BLOCK_K]
+    b_ptrs = b_ptr + indices_k[:, None] * stride_bk + indices_n[None, :] * stride_bn  # [BLOCK_K, BLOCK_N]
+    acc = tl.zeros([BLOCK_M, BLOCK_N], dtype=tl.float32)
+    # Move along row tiles of a, column tiles of b
+    for k in range(0, K, BLOCK_K):
+        a = tl.load(a_ptrs, mask=(indices_m[:, None] < M) & (indices_k[None, :] + k < K), other=0.0)
+        b = tl.load(b_ptrs, mask=(indices_k[:, None] + k < K) & (indices_n[None, :] < N), other=0.0)
+        acc += tl.dot(a, b)
+        a_ptrs += BLOCK_K * stride_ak  # Advance to the next row tile of a
+        b_ptrs += BLOCK_K * stride_bk  # Advance to the next column tile of b
+    # Apply activation function (e.g., ReLU)
+    acc = tl.maximum(acc, 0.0)
+    # Write output tile
+    c_ptrs = c_ptr + indices_m[:, None] * stride_cm + indices_n[None, :] * stride_cn
+    tl.store(c_ptrs, acc, mask=(indices_m[:, None] < M) & (indices_n[None, :] < N))
+```
+
+这行代码将1d的`indice_m`和`indice_k`通过broadcast，变成2d的shape：
+
+```python
+a_ptrs = a_ptr + indices_m[:, None] * stride_am + indices_k[None, :] * stride_ak
 ```
 
