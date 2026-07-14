@@ -30,10 +30,17 @@ module:
 ## ADVANCED
 ############################
 markup:
+  _merge: deep
   tableOfContents:
     endLevel: 5
     ordered: false
     startLevel: 1
+  highlight:
+    codeFences: true
+    guessSyntax: true
+    lineNos: false
+    noClasses: false
+    tabWidth: 4
 enableGitInfo: false
 summaryLength: 30
 paginate: 10
@@ -60,8 +67,6 @@ taxonomies:
   category: categories
   publication_type: publication_types
   author: authors
-markup:
-  _merge: deep
 related:
   threshold: 80
   includeNewer: true
