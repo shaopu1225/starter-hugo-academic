@@ -1,5 +1,6 @@
 ---
-title: Posts
+title: Blog
+description: Technical notes on systems, databases, networks, and machine learning.
 cms_exclude: true
 
 # View.
@@ -13,3 +14,5 @@ header:
   caption: ''
   image: ''
 ---
+
+Technical notes, course notes, and things I learned while building and studying computer systems.

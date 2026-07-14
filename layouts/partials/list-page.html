@@ -1,0 +1,16 @@
+<header class="list-header">
+  <h1>{{ .Title }}</h1>
+  {{ with .Content }}<div class="list-intro">{{ . }}</div>{{ end }}
+</header>
+
+{{ if eq .Section "post" }}
+  {{ partial "post-list.html" .Pages.ByDate.Reverse }}
+{{ else }}
+  <ul>
+    {{ range .Pages.ByTitle }}
+      <li><a href="{{ .RelPermalink }}">{{ .Title }}</a></li>
+    {{ else }}
+      <li>No pages yet.</li>
+    {{ end }}
+  </ul>
+{{ end }}
