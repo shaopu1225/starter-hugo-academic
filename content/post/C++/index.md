@@ -17,7 +17,7 @@ categories:
     - Programming Language
 ---
 
-本篇文章是我学习*CS 106L*课程的笔记记录，但本文中大部分内容来自于学习过程中查阅的各种*blog*以及*StackOverflow*和**cpp**的标准文档，作为个人日后查询、补充和深入学习的手册使用。此外，我将2019秋季Stanford的CS 106L作业发布在我的[Github仓库](https://github.com/SongShaopu1998/Stanford-CS-106L)，按照课程要求，设置为私人仓库。
+本篇文章是我学习*CS 106L*课程的笔记记录，但本文中大部分内容来自于学习过程中查阅的各种*blog*以及*StackOverflow*和**cpp**的标准文档，作为个人日后查询、补充和深入学习的手册使用。此外，我将2019秋季Stanford的CS 106L作业发布在我的[Github仓库](https://github.com/shaopu1225/Stanford-CS-106L)，按照课程要求，设置为私人仓库。
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/202111091826467.png" alt="image-20211109182644300" style="zoom:50%;" />
 
@@ -641,7 +641,7 @@ using reference = std::conditional_t<Const, const _value_type&, _value_type&>;
 using iterator_category = std::forward_iterator_tag;
 ```
 
-我们必须添加这些以满足程序对`iterator`类设计的基本要求，同时根据`iterator_category`提供**必要的运算符重载**，需要注意的是其中前置`++`与后置`++`的实现方法（基本是固定套路），参看我的[Github repository](https://github.com/SongShaopu1998/Stanford-CS-106L/blob/main/Assignment3-HashMap/hashmap_iterator.h). 
+我们必须添加这些以满足程序对`iterator`类设计的基本要求，同时根据`iterator_category`提供**必要的运算符重载**，需要注意的是其中前置`++`与后置`++`的实现方法（基本是固定套路），参看我的[Github repository](https://github.com/shaopu1225/Stanford-CS-106L/blob/main/Assignment3-HashMap/hashmap_iterator.h). 
 
 根据*Mastering the cpp17 STL*这本书的设计，我们还提供了一个`conversion operator`，允许迭代器从`iterator`转型到`const_iterator`：
 

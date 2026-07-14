@@ -19,7 +19,7 @@ categories:
     - CS course notes
 ---
 
-我将2020秋季Berkeley的CS 61A作业发布在我的[Github仓库](https://github.com/SongShaopu1998/Berkeley-CS-61A)，由于学校课程要求，设置为私人仓库。
+我将2020秋季Berkeley的CS 61A作业发布在我的[Github仓库](https://github.com/shaopu1225/Berkeley-CS-61A)，由于学校课程要求，设置为私人仓库。
 
 > 几类递归问题：
 >

@@ -292,7 +292,7 @@ for (int i = 0; i < n; ++i) {
 
 ### Bit operation
 
-在*Fa 2021 lab 02*中，我们需要解决三个位操作的函数，查看[Github仓库](https://github.com/SongShaopu1998/Berkeley-CS-61C/blob/main/labs/fa21-lab-starter-main/lab02/bit_ops.c)。分别为：
+在*Fa 2021 lab 02*中，我们需要解决三个位操作的函数，查看[Github仓库](https://github.com/shaopu1225/Berkeley-CS-61C/blob/main/labs/fa21-lab-starter-main/lab02/bit_ops.c)。分别为：
 
 - 获取某位
 - 改变某位
@@ -715,7 +715,7 @@ int sumSquare(int x, int y) {
 }
 ```
 
-一个与嵌套函数调用相关的是在RISC-V中使用递归，我写了一个递归版本的斐波那契，在我的[Github仓库](https://github.com/SongShaopu1998/RISC-V-Recursive-Fibonacci/blob/main/fib.s)中。在课程提供的**lab3**中，也有几个递归调用的例子。
+一个与嵌套函数调用相关的是在RISC-V中使用递归，我写了一个递归版本的斐波那契，在我的[Github仓库](https://github.com/shaopu1225/RISC-V-Recursive-Fibonacci/blob/main/fib.s)中。在课程提供的**lab3**中，也有几个递归调用的例子。
 
 #### Register Conventions
 

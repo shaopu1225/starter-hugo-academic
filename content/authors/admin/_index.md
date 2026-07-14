@@ -60,7 +60,7 @@ social:
   #   link: https://scholar.google.co.uk/citations?user=sIwtMXoAAAAJ
   - icon: github
     icon_pack: fab
-    link: https://github.com/SongShaopu1998
+    link: https://github.com/shaopu1225
   - icon: linkedin
     icon_pack: fab
     link: https://www.linkedin.com/in/shaopu-song-626062153/

@@ -20,7 +20,7 @@ categories:
     - CS course notes
 ---
 
-我将2017冬季与2018秋季Stanford的CS 106X作业发布在我的[Github仓库](https://github.com/SongShaopu1998/Stanford-CS-106X).
+我将2017冬季与2018秋季Stanford的CS 106X作业发布在我的[Github仓库](https://github.com/shaopu1225/Stanford-CS-106X).
 
 ## CS 106X Lecture 2 -- Functions & Strings
 
@@ -1666,7 +1666,7 @@ struct TireNode {
 
 #### 方法实现（My Github）
 
-由于字典查找树的实现较为复杂，我将实现方法放到了我的[GitHub仓库](https://github.com/SongShaopu1998/Tries)中，该仓库内同时包含了压缩字典查找树，即*compressed trie*的实现。
+由于字典查找树的实现较为复杂，我将实现方法放到了我的[GitHub仓库](https://github.com/shaopu1225/Tries)中，该仓库内同时包含了压缩字典查找树，即*compressed trie*的实现。
 
 > 关于*compressed trie*，这里有一篇博客讲得比较清楚，我的代码也是根据此原理实现：
 >
@@ -1921,7 +1921,7 @@ private:
 >
 > $$2^{h+1} - 1> n > 2^h$$
 
-**最小堆是构造优先队列的常用方法。**在CS 106X的课程[作业](https://github.com/SongShaopu1998/Stanford-CS-106X/tree/main/Homework5D-Heap)中，也出现了这一主题，分别使用链表与堆构建优先级队列. 这里就以构建最小堆为例，讨论堆的各种操作与实现方法：
+**最小堆是构造优先队列的常用方法。**在CS 106X的课程[作业](https://github.com/shaopu1225/Stanford-CS-106X/tree/main/Homework5D-Heap)中，也出现了这一主题，分别使用链表与堆构建优先级队列. 这里就以构建最小堆为例，讨论堆的各种操作与实现方法：
 
 > 在以下的实现方法中，函数参数包含了指向`heap`的指针，是为了方便独立参照。
 
@@ -2150,7 +2150,7 @@ $$H(p_1, p_2) = abs(p_1.x - p_2.x) + abs(p_1.y - p_2.y)$$
 
 一种替代A*算法的方式是双向搜索，也即从起点与终点分别同时开始搜索过程。
 
-参照*geeksforgeeks*网站给出的实例程序，它包含了设计图类，邻接表设计，BFS设计以及最终双向搜索算法的实现， 我对代码进行了重构，放到我的[Github仓库](https://github.com/SongShaopu1998/Graph-Algorithm-demos/tree/main/bidirectionSearch)。
+参照*geeksforgeeks*网站给出的实例程序，它包含了设计图类，邻接表设计，BFS设计以及最终双向搜索算法的实现， 我对代码进行了重构，放到我的[Github仓库](https://github.com/shaopu1225/Graph-Algorithm-demos/tree/main/bidirectionSearch)。
 
 ### MST problem
 
@@ -2191,7 +2191,7 @@ $$H(p_1, p_2) = abs(p_1.x - p_2.x) + abs(p_1.y - p_2.y)$$
 
 ---
 
-现在回到*Kruskal*算法。我将一个demo放到了我的[Github仓库](https://github.com/SongShaopu1998/Graph-Algorithm-demos/tree/main/kruskal%20%26%20union%20find).
+现在回到*Kruskal*算法。我将一个demo放到了我的[Github仓库](https://github.com/shaopu1225/Graph-Algorithm-demos/tree/main/kruskal%20%26%20union%20find).
 
 所谓最小生成树，“最小”，是指代价最小，这是由优先级队列决定的；而“生成树”，则是由并查集决定的，为了说明这一点，我们可以试想一个最简单的图：三角形。其MST应当为两条边，当我们使用并查集时，如果前两条边均已被加入了并查集的**forest**，那么意味着并查集中`[0,1]`，`[1,2]`位置的元素（顶点）都被放到了同一个集合中，具有相同的代表元素（根节点）。那么再次尝试`[0,2]`时，必定出现`find(0) == find(2)`的结果，所以第三条边不会被加入。
 

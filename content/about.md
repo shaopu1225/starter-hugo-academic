@@ -16,5 +16,5 @@ My main interests are distributed systems, database systems, operating systems, 
 ## Find me online
 
 - Email: `shaopu at berkeley dot edu`
-- [GitHub](https://github.com/SongShaopu1998)
+- [GitHub](https://github.com/shaopu1225)
 - [LinkedIn](https://www.linkedin.com/in/shaopu-song-626062153/)
