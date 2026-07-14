@@ -678,5 +678,64 @@ FP4省略。
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-13-153123.png" alt="image-20260713233122704" style="zoom:50%;" />
 
+> 理解从3-pass softmax -> online softmax -> 1-pass flash attention的数学推导：https://zhuanlan.zhihu.com/p/668888063
 
+## Kernel, Triton, XLA
+
+一些基本概念。
+
+### occupancy
+
+- Each thread can use between 0 and 255 registers.
+- The more registers threads use, the fewer threads can be scheduled on an SM (low occupancy).
+- Low occupancy isn't necessarily bad if each thread is doing more work.
+- Example: thread coarsening (each thread processes multiple elements).
+- Example: thread block has 64 threads, each using 160 registers, SM has 65536 registers
+
+```python
+# What we want to run
+num_threads_per_block = 128
+num_registers_per_thread = 160
+# What hardware offers
+max_registers = 65536  # Registers allowed per SM
+max_warps = 64         # Concurrent warps allowed per SM
+# What we can run at once
+assert num_registers_per_thread <= 255
+num_registers_per_block = num_threads_per_block * num_registers_per_thread  
+num_blocks = max_registers // num_registers_per_block  # Limited by registers 
+num_warps = num_blocks * num_threads_per_block / 32  
+occupancy = num_warps / max_warps
+```
+
+### Bank Conflicts
+
+同一个warp中的每个线程对share mem访问的是同一个bank中的地址（不是完全一样的地址，否则会触发broadcast）：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-14-074056.png" alt="image-20260714154056371" style="zoom:50%;" />
+
+### Memory coalescing
+
+针对HBM：
+
+```python
+    
+When the 32 threads in a warp access HBM, memory accesses combined into transactions of 128 bytes (cache lines).
+    M00 M01 M02 M03 M04 M05 M06 M07 M08 M09 M10 M11 M12 M13 M14 M15 M16 M17 M18 M19 M20 M21 M22 M23 M24 M25 M26 M27 M28 M29 M30 M31
+    M32 M33 M34 M35 M36 M37 M38 M39 M40 M41 M42 M43 M44 M45 M46 M47 M48 M49 M50 M51 M52 M53 M54 M55 M56 M57 M58 M59 M60 M61 M62 M63
+    
+Best case: full coalescing, all threads access the same cache line (32 threads x 4 bytes = 128 bytes).
+```
+
+### Block occupancy
+
+```python
+    
+Thread blocks scheduled onto SMs in waves.
+    
+B200 has 148 SMs, if we launch 160 thread blocks, first wave has 148 blocks, second wave has 12 blocks.
+    
+Wave quantization problem: last wave has fewer thread blocks, leaving some SMs idle (low block occupancy).
+    
+Solution: make number of thread blocks divide # SMs.
+```
 
