@@ -1,0 +1,28 @@
+<script>
+  window.MathJax = {
+    loader: {
+      load: ["ui/safe"]
+    },
+    tex: {
+      displayMath: [["\\[", "\\]"], ["$$", "$$"]],
+      inlineMath: [["\\(", "\\)"], ["$", "$"]],
+      processEscapes: true,
+      processEnvironments: true
+    },
+    options: {
+      skipHtmlTags: [
+        "script",
+        "noscript",
+        "style",
+        "textarea",
+        "pre",
+        "code",
+        "math",
+        "select",
+        "option",
+        "mjx-container"
+      ]
+    }
+  };
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"></script>

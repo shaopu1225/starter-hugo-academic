@@ -347,6 +347,19 @@ pre > code {
   border: 0;
 }
 
+/* Keep long display equations readable within the narrow article column. */
+mjx-container[display="true"] {
+  max-width: 100%;
+  margin: 1.25rem 0 !important;
+  padding: 0.25rem 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+mjx-container:not([display="true"]) {
+  margin: 0 0.08em;
+}
+
 blockquote {
   margin: 1em 0;
   padding: 0.25rem 1rem;

@@ -11,6 +11,10 @@
     {{ with .OutputFormats.Get "RSS" }}<link rel="alternate" type="application/rss+xml" title="{{ site.Title }}" href="{{ .RelPermalink }}">{{ end }}
     {{ $style := resources.Get "css/minimal.css" | minify | fingerprint }}
     <link rel="stylesheet" href="{{ $style.RelPermalink }}" integrity="{{ $style.Data.Integrity }}">
+    {{ $hasMath := or (in .RawContent "$") (in .RawContent "\\(") (in .RawContent "\\[") (in .RawContent "\\begin{") }}
+    {{ if and site.Params.features.math.enable $hasMath }}
+      {{ partialCached "math.html" . }}
+    {{ end }}
   </head>
   <body>
     {{ partial "site-header.html" . }}
