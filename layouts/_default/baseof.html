@@ -9,6 +9,9 @@
     <meta name="description" content="{{ $description }}">
     <link rel="canonical" href="{{ .Permalink }}">
     {{ with .OutputFormats.Get "RSS" }}<link rel="alternate" type="application/rss+xml" title="{{ site.Title }}" href="{{ .RelPermalink }}">{{ end }}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&amp;display=swap">
     {{ $style := resources.Get "css/minimal.css" | minify | fingerprint }}
     <link rel="stylesheet" href="{{ $style.RelPermalink }}" integrity="{{ $style.Data.Integrity }}">
     {{ $hasMath := or (in .RawContent "$") (in .RawContent "\\(") (in .RawContent "\\[") (in .RawContent "\\begin{") }}
