@@ -965,5 +965,76 @@ Zero有两篇论文值得一读，一个是deepspeed原始的Zero论文，首次
 
 待补充。
 
-#### 
+### parallelism
+
+DDP略过.
+
+#### TP
+
+```python
+def tensor_parallelism_main(rank: int, world_size: int, data: tensor, num_layers: int):
+    setup(rank, world_size)  
+    data = data.to(cuda_if_available(rank))  # All ranks get the data (batch_size x num_dim)
+    batch_size = data.size(0)  
+    num_dim = data.size(1)  
+    local_num_dim = int_divide(num_dim, world_size)  # Shard `num_dim`  
+    # Create model (each rank gets 1/world_size of the parameters)
+    #  |  |  |  |
+    # W0 W1 W2 W3
+    #  |  |  |  |
+    params = [get_init_params(num_dim, local_num_dim, rank) for layer in range(num_layers)]
+    # Forward pass
+    x = data
+    for layer in range(num_layers):
+        # Compute activations (batch_size x local_num_dim)
+        x = x @ params[layer]  # Note: this is only on a slice of the parameters
+        x = F.gelu(x)
+        # Allocate memory for activations (world_size x batch_size x local_num_dim)
+        activations = [torch.empty(batch_size, local_num_dim, device=cuda_if_available(rank)) for _ in range(world_size)]
+        # Send activations via all gather
+        dist.all_gather(tensor_list=activations, tensor=x, async_op=False)
+        # Concatenate them to get batch_size x num_dim
+        x = torch.cat(activations, dim=1)
+    print(f"[tensor_parallelism] Rank {rank}: forward pass produced activations {summarize_tensor(x)}", flush=True)  
+    # Backward pass: homework exercise
+    cleanup()
+```
+
+#### PP
+
+```python
+def pipeline_parallelism_main(rank: int, world_size: int, data: tensor, num_layers: int, num_micro_batches: int):
+    setup(rank, world_size)  
+    # Use all the data
+    data = data.to(cuda_if_available(rank))
+    batch_size = data.size(0)  
+    num_dim = data.size(1)  
+    # Split up layers
+    local_num_layers = int_divide(num_layers, world_size)  
+    # Each rank gets a subset of layers
+    local_params = [get_init_params(num_dim, num_dim, rank) for layer in range(local_num_layers)]  
+    # Forward pass
+    # Break up into micro batches to minimize the bubble
+    micro_batch_size = int_divide(batch_size, num_micro_batches)  
+    if rank == 0:
+        # The data
+        micro_batches = data.chunk(chunks=num_micro_batches, dim=0)
+    else:
+        # Allocate memory for activations
+        micro_batches = [torch.empty(micro_batch_size, num_dim, device=cuda_if_available(rank)) for _ in range(num_micro_batches)]
+    for x in micro_batches:
+        # Get activations from previous rank
+        if rank - 1 >= 0:
+            dist.recv(tensor=x, src=rank - 1)
+        # Compute layers assigned to this rank
+        for param in local_params:
+            x = x @ param
+            x = F.gelu(x)
+        # Send to the next rank
+        if rank + 1 < world_size:
+            print(f"[pipeline_parallelism] Rank {rank}: sending {summarize_tensor(x)} to rank {rank + 1}", flush=True)  
+            dist.send(tensor=x, dst=rank + 1)
+```
+
+
 
