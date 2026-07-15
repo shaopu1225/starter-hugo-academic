@@ -1000,6 +1000,22 @@ def tensor_parallelism_main(rank: int, world_size: int, data: tensor, num_layers
     cleanup()
 ```
 
+TP常在一个节点内部，因为需要比较重的通信操作。
+
+TP通信流程参考[Megatron-LM论文](https://arxiv.org/pdf/1909.08053)，对于transformer结构，FFN和self-attention各需要两次allreduce（forward+backward）。
+
+> FFN使用allreduce是因为FFN有两层matmul，都做了TP切分，所以实质上形成了:
+>
+> 对第一层linear，因为后续`GeLu`不满足线性叠加性，所以要对第一层权重矩阵$A$按照`column-parallel`切分为$[A_1,A_2]$，输入$X$不需要切分，做$XA$即可。
+>
+> 第二层linear为了接上第一层output $Y$，所以对第二层权重矩阵$B$按`row-parallel`切分为$[B_1,B_2]^T$，做$YB$。
+>
+> 那么，$[Y_1, Y_2] @ [B_1, B_2]^T=Y_1B_1+Y_2B_2$，这个加法就是`allreduce`的来源。
+>
+> Self-attention使用allreduce也是因为在attention结构之后接了一个矩阵乘，QKV结构切分时也按照`column-parallel`切分，原因是要保证每个head对应的计算都在同一节点上。
+>
+> 与上述两者不同的就是对embedding的切分，因为这里不存在两层linear等类似结构，所以只需要一次`AllGather`将结果聚合就好，反向对应的就是`Reudce-Scatter`。
+
 #### PP
 
 ```python
