@@ -894,3 +894,76 @@ a_ptrs = a_ptr + indices_m[:, None] * stride_am + indices_k[None, :] * stride_ak
 
 ## Parallelism
 
+### NCCL
+
+#### Zero系列显存策略优化
+
+Zero有两篇论文值得一读，一个是deepspeed原始的Zero论文，首次提出了zero1,2,3的架构，还有一篇论文是Meta PyTorch团队在FSDP上的工作，偏工程实践一些。这里把两篇论文的解读也放在这里：
+
+##### ZeRO: Memory Optimizations Toward Training Trillion Parameter Models
+
+> https://arxiv.org/pdf/1910.02054 
+
+1. 问题1: 显存占用是如何分配的？
+
+在常见的混精度训练中，一般分为如下几份：bf16的参数+bf16的梯度+fp32的M/V (对于Adam优化器)+fp32的参数拷贝，大概是2+2+12=16的显存占用；
+
+2. 问题2: zero的三个阶段分别是什么？
+
+- Zero1: 分片optimizer状态
+- Zero2: 分片梯度
+- Zero3: 分片参数
+
+通过上边对显存的占用分析，我们可以知道这几种方案对显存的节省程度如下图：
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-01-20-141747.png" alt="image-20260120221747577" style="zoom:50%;" />
+
+3. **这几种不同的zero策略，对通信的开销是多大？**
+
+这也是整个zero系列最关键的问题。
+
+要讲明白这个问题，我们要先从DDP开始，DDP的allreduce的通信开销是多大？
+
+> 参考文章：https://zhuanlan.zhihu.com/p/504957661
+
+4. 如何提高通信效率？
+
+做梯度分桶，每个worker负责几个bucket（layers），由于我们可以根据网络梯度计算顺序对梯度bucket做拓扑排序，每个worker上的计算图均按此执行，我们可以在每个worker上的属于shard i的梯度ready之后，参与将梯度reduce到shard i的reduce scatter（当然有的worker reduce scatter的早，有的晚，取决于对应worker分到的bucket位于拓扑图中的哪个位置）。
+
+这样做的好处在于
+
+- 每个worker处理完不属于自己的bucket的梯度之后就可以将其丢弃，节省显存；
+- 更好的通信 计算overlap；
+
+###### allreduce通信开销
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-05-18-141918.png" alt="img" style="zoom:50%;" />
+
+当前最先进的allreduce通信通过两阶段完成：reduce-scatter + all-gather；即每个shard将收到所有属于自己这部分的梯度， 在本地加好，再通过一个allgather让其他所有shard也能收到自己加好的这一份，最终每个shard上都保留了完整的做了reduce-sum的整体梯度。这两个操作均可以通过环形通信算法实现（Ring-Allreduce），具体流程可以看上边贴的知乎链接，结论很重要：
+
+对于p个设备，大小为V的矩阵(每个设备上有V/P大小的矩阵)；假设双工通信，出入口带宽均为$\beta$,
+
+1. 所有设备之前传输的**总数据量**为$2*(p-1)v/p*p=2*(p-1)*v$，如果p足够大，近似于$2*pv$.
+2. 因为在同一轮内，每个设备在发送数据的同时也可以收到数据，整个过程需要的时间是$2(p-1)v/2p\beta$，如果p足够大，近似于$v/\beta$，与设备数无关；
+
+> 我们这里的通信时间只考虑传输带宽，而没有考虑每次传输都包含的延迟（latency）。当数据量V比较大时，延迟项可以忽略，上文的分析就是成立的。当 V 特别小，或者设备数 p 特别大时，带宽就变得不重要了，反而是延迟比较关键，这时更好地实现就不是环状算法了，而应该使用树状通信。
+>
+> 这也是为什么英伟达 NCCL 里既实现了ring all-reduce，也实现了 double-tree all-reduce 算法.
+
+因为我们这里要对比的就是allreduce本身带来的通信开销，假定设备数量为常量，那么allreduce的通信开销和v成正比。
+
+- **Zero1**: 在做参数更新后，由于每个worker只存了属于自己的那份优化器状态，所以需要通过一次allgather收集**更新后的参数**就好，这和原本的allreduce无异；通信开销仍为2pv;
+
+- **Zero2**: 每个worker只存自己的优化器状态+梯度，这要求我们将allreduce拆开为两阶段：在拿到各自worker的梯度后先通过一次reduce scatter，将梯度在对应worker上累加，再做all-gather收集更新后的参数；可以看到，通信开销和先前仍无区别；
+
+  > 虽然这里和DDP一样也是reduce_scatter+all_gather,但是这里all_gather的是参数，而非梯度;梯度已经是通过reduce_scatter之后分片的了
+
+- **Zero3**: 每个worker保存自己的优化器状态+梯度+参数，这要求我们在前向和反向都添加额外的通信操作：在前向计算前，通过一次allgather收集参数：为了计算通信的overlap，我们仍然采用分桶策略，总通信开销为$v/p*p*p$；这样的allgather操作在反向也有一个，同时再加上梯度的reduce scatter，总共需要3pv的通信，也即正常方案的1.5倍；
+
+##### PyTorch FSDP: Experiences on Scaling Fully Sharded Data Parallel
+
+> https://arxiv.org/pdf/2304.11277
+
+待补充。
+
+#### 
+
