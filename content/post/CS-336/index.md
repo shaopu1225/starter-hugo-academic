@@ -24,7 +24,7 @@ categories:
 
 - 资源量的计算：两个方面：memory & compute
 
-total_flops公式：$6 \times token\_num \times param\_num$ (对每一个输入的token ，前向要跑过所有的参数，每一个参数都要参与矩阵乘，每个元素都需要经过一次加法和乘法，所以前向需要2TP，反向需要对输出和权重各做一次相同的操作，所以一共需要6TP)
+total_flops公式：$6 \times token \_num \times param \_num$ (对每一个输入的token ，前向要跑过所有的参数，每一个参数都要参与矩阵乘，每个元素都需要经过一次加法和乘法，所以前向需要2TP，反向需要对输出和权重各做一次相同的操作，所以一共需要6TP)
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-06-27-045537.png" alt="image-20260627125537371" style="zoom:50%;" />
 
