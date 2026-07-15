@@ -891,3 +891,6 @@ def matmul_relu_kernel(
 ```python
 a_ptrs = a_ptr + indices_m[:, None] * stride_am + indices_k[None, :] * stride_ak
 ```
+
+## Parallelism
+
