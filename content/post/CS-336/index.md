@@ -951,9 +951,9 @@ Zero有两篇论文值得一读，一个是deepspeed原始的Zero论文，首次
 
 因为我们这里要对比的就是allreduce本身带来的通信开销，假定设备数量为常量，那么allreduce的通信开销和v成正比。
 
-- **Zero1**: 在做参数更新后，由于每个worker只存了属于自己的那份优化器状态，所以需要通过一次allgather收集**更新后的参数**就好，这和原本的allreduce无异；通信开销仍为2pv;
+- **Zero1**: 在做参数更新后，由于每个worker只存了属于自己的那份优化器状态，所以先做一次reduce_scatter让每个worker收集自己opt分片需要的梯度，做完参数更新后，再通过一次allgather收集**更新后的参数**就好，这和原本的allreduce无异；通信开销仍为2pv;
 
-- **Zero2**: 每个worker只存自己的优化器状态+梯度，这要求我们将allreduce拆开为两阶段：在拿到各自worker的梯度后先通过一次reduce scatter，将梯度在对应worker上累加，再做all-gather收集更新后的参数；可以看到，通信开销和先前仍无区别；
+- **Zero2**: 每个worker只存自己的优化器状态+梯度，这要求我们`incrementally goes backward on the computation graph`：每个worker在计算好某个layer的梯度后，就参与将这份梯度reduce到正确的worker上，之后如果不再需要这份梯度，就立刻free（相当于将一个大的`reduce-scatter`过程拆分）；最后仍然是再做all-gather收集更新后的参数；可以看到，通信开销和先前仍无区别；
 
   > 虽然这里和DDP一样也是reduce_scatter+all_gather,但是这里all_gather的是参数，而非梯度;梯度已经是通过reduce_scatter之后分片的了
 
