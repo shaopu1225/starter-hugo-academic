@@ -1010,9 +1010,9 @@ def tensor_parallelism_main(rank: int, world_size: int, data: tensor, num_layers
     cleanup()
 ```
 
-TP常在一个节点内部，因为需要比较重的通信操作。
+TP常在一个节点内部，因为需要比较重的通信操作。但是对于TPU而言，因为其采用mesh的方法链接，所以不同节点之间的通信开销差异不大，从而可以使用比较大的TP size。
 
-TP通信流程参考[Megatron-LM论文](https://arxiv.org/pdf/1909.08053)，对于transformer结构，FFN和self-attention各需要两次allreduce（forward+backward）。
+TP通信流程参考[Megatron-LM论文](https://arxiv.org/pdf/1909.08053)，对于transformer结构，FFN和self-attention各需要两次allreduce（forward+backward），即对于一个transformer layer，需要4次allreduce。
 
 > FFN使用allreduce是因为FFN有两层matmul，都做了TP切分，所以实质上形成了:
 >
@@ -1025,6 +1025,18 @@ TP通信流程参考[Megatron-LM论文](https://arxiv.org/pdf/1909.08053)，对�
 > Self-attention使用allreduce也是因为在attention结构之后接了一个矩阵乘，QKV结构切分时也按照`column-parallel`切分，原因是要保证每个head对应的计算都在同一节点上。
 >
 > 与上述两者不同的就是对embedding的切分，因为这里不存在两层linear等类似结构，所以只需要一次`AllGather`将结果聚合就好，反向对应的就是`Reudce-Scatter`。
+
+#### activation analysis
+
+> 参考：https://proceedings.mlsys.org/paper_files/paper/2023/file/80083951326cf5b35e5100260d64ed81-Paper-mlsys2023.pdf
+
+在加上TP之后，activation的大小从$sbh(34+5\frac{as}{h})$-->$sbh(10+\frac{24}{t}+5\frac{as}{ht})$,其中仍然有一个10的常数项不被tensor parallel size影响，它包含了：
+
+- LayerNorm (4bsh)
+- Dropout (2bsh)
+- Inputs to attention and MLP (4bsh)
+
+这就是为什么我们需要SP (`sequence parallel`)来切分这些结构。
 
 ### PP
 
@@ -1076,3 +1088,22 @@ def pipeline_parallelism_main(rank: int, world_size: int, data: tensor, num_laye
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-16-080042.png" alt="image-20260716160041485" style="zoom:50%;" />
 
+### SP
+
+从sequence axis切分而非hidden axis。仍然参考TP部分activation analysis的章节。
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-16-094716.png" alt="image-20260716174716446" style="zoom:50%;" />
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-16-100539.png" alt="image-20260716180538968" style="zoom:50%;" />
+
+### EP
+
+EP在MOE场景下比TP好的原因：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-16-114955.png" alt="image-20260716194954572" style="zoom:50%;" />
+
+尤其是TP会破坏大矩阵乘。
+
+但是在transformer中使用EP时，因为attention本身会使用TP做切分，所以实际上需要对attention和MLP着两个结构的并行策略做解耦：对attention使用high TP，MLP使用EP（low TP）.
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-16-115219.png" alt="image-20260716195219492" style="zoom:50%;" />
