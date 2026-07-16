@@ -24,7 +24,7 @@ categories:
 
 - 资源量的计算：两个方面：memory & compute
 
-total_flops公式：$6 \times token \_num \times param \_num$ (对每一个输入的token ，前向要跑过所有的参数，每一个参数都要参与矩阵乘，每个元素都需要经过一次加法和乘法，所以前向需要2TP，反向需要对输出和权重各做一次相同的操作，所以一共需要6TP)
+total_flops公式：$6 \times token\_num \times param\_num$ (对每一个输入的token ，前向要跑过所有的参数，每一个参数都要参与矩阵乘，每个元素都需要经过一次加法和乘法，所以前向需要2TP，反向需要对输出和权重各做一次相同的操作，所以一共需要6TP)
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-06-27-045537.png" alt="image-20260627125537371" style="zoom:50%;" />
 
@@ -1028,6 +1028,8 @@ TP通信流程参考[Megatron-LM论文](https://arxiv.org/pdf/1909.08053)，对�
 
 ### PP
 
+pipeline parallel的好处在于，通信量比较小，基本是activation（$B\times S \times H$），而非all-to-all通信，所以比较适合作为最外层的切分组织（在data center或者pod间做PP切分）。
+
 ```python
 def pipeline_parallelism_main(rank: int, world_size: int, data: tensor, num_layers: int, num_micro_batches: int):
     setup(rank, world_size)  
@@ -1062,5 +1064,15 @@ def pipeline_parallelism_main(rank: int, world_size: int, data: tensor, num_laye
             dist.send(tensor=x, dst=rank + 1)
 ```
 
+最简单的做法：切分micro-batch之后，按照顺序做1F1B，这是GPipe的方法: 
 
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-16-075722.png" alt="image-20260716155722360" style="zoom:50%;" />
+
+进一步，可以将forward pass和backward pass交叠，即interleave 1F1B：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-16-075840.png" alt="image-20260716155839964" style="zoom:50%;" />
+
+再之后可以考虑反向需要对$W$和输入$X$都做更新，而后者的更新对反向的推动不可或缺，所以可以在空泡中插入对$W$的更新，做成`zero-bubble pipeline parallel`.
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-16-080042.png" alt="image-20260716160041485" style="zoom:50%;" />
 

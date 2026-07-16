@@ -31,6 +31,17 @@ module:
 ############################
 markup:
   _merge: deep
+  goldmark:
+    extensions:
+      passthrough:
+        enable: true
+        delimiters:
+          block:
+            - ['\[', '\]']
+            - ['$$', '$$']
+          inline:
+            - ['\(', '\)']
+            - ['$', '$']
   tableOfContents:
     endLevel: 5
     ordered: false
