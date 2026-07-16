@@ -959,6 +959,8 @@ Zero有两篇论文值得一读，一个是deepspeed原始的Zero论文，首次
 
 - **Zero3**: 每个worker保存自己的优化器状态+梯度+参数，这要求我们在前向和反向都添加额外的通信操作：在前向计算前，通过一次allgather收集参数：为了计算通信的overlap，我们仍然采用分桶策略，总通信开销为$v/p*p*p$；这样的allgather操作在反向也有一个，同时再加上梯度的reduce scatter，总共需要3pv的通信，也即正常方案的1.5倍；
 
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-16-060521.png" alt="FSDP workflow" style="zoom:50%;" />
+
 ##### PyTorch FSDP: Experiences on Scaling Fully Sharded Data Parallel
 
 > https://arxiv.org/pdf/2304.11277
