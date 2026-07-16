@@ -19,7 +19,7 @@
       {{ partialCached "math.html" . }}
     {{ end }}
   </head>
-  <body>
+  <body{{ if and .IsPage (eq .Section "post") }} class="post-page"{{ end }}>
     {{ partial "site-header.html" . }}
     <main>
       {{ block "main" . }}{{ end }}
