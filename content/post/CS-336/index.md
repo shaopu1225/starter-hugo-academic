@@ -894,6 +894,18 @@ a_ptrs = a_ptr + indices_m[:, None] * stride_am + indices_k[None, :] * stride_ak
 
 ## Parallelism
 
+### DP
+
+为什么DP不够用？
+
+因为随着机器数量的增加，首先每个节点上的样本不能太少，否则通信开销占比过大；其次如果每个机器上样本过多，如果超过`critical batch size`，在batch梯度中，从噪声主导区进入有效梯度信号主导区，梯度已经比较准确，那么继续增大batch，收敛速度不会线性增长：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-16-065614.png" alt="image-20260716145613698" style="zoom:50%;" />
+
+这块关于信噪比的分析可以参考OpenAI的文章：
+
+> An Empirical Model of Large-Batch Training: https://arxiv.org/pdf/1812.06162
+
 ### Zero系列显存策略优化
 
 Zero有两篇论文值得一读，一个是deepspeed原始的Zero论文，首次提出了zero1,2,3的架构，还有一篇论文是Meta PyTorch团队在FSDP上的工作，偏工程实践一些。这里把两篇论文的解读也放在这里：
