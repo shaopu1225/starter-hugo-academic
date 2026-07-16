@@ -894,13 +894,11 @@ a_ptrs = a_ptr + indices_m[:, None] * stride_am + indices_k[None, :] * stride_ak
 
 ## Parallelism
 
-### NCCL
-
-#### Zero系列显存策略优化
+### Zero系列显存策略优化
 
 Zero有两篇论文值得一读，一个是deepspeed原始的Zero论文，首次提出了zero1,2,3的架构，还有一篇论文是Meta PyTorch团队在FSDP上的工作，偏工程实践一些。这里把两篇论文的解读也放在这里：
 
-##### ZeRO: Memory Optimizations Toward Training Trillion Parameter Models
+#### ZeRO: Memory Optimizations Toward Training Trillion Parameter Models
 
 > https://arxiv.org/pdf/1910.02054 
 
@@ -934,7 +932,7 @@ Zero有两篇论文值得一读，一个是deepspeed原始的Zero论文，首次
 - 每个worker处理完不属于自己的bucket的梯度之后就可以将其丢弃，节省显存；
 - 更好的通信 计算overlap；
 
-###### allreduce通信开销
+##### allreduce通信开销
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-05-18-141918.png" alt="img" style="zoom:50%;" />
 
@@ -961,17 +959,15 @@ Zero有两篇论文值得一读，一个是deepspeed原始的Zero论文，首次
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-16-060521.png" alt="FSDP workflow" style="zoom:50%;" />
 
-##### PyTorch FSDP: Experiences on Scaling Fully Sharded Data Parallel
+#### PyTorch FSDP: Experiences on Scaling Fully Sharded Data Parallel
 
 > https://arxiv.org/pdf/2304.11277
 
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-16-060718.png" alt="image-20260716140717765" style="zoom:50%;" />
+
 待补充。
 
-### parallelism
-
-DDP略过.
-
-#### TP
+### TP
 
 ```python
 def tensor_parallelism_main(rank: int, world_size: int, data: tensor, num_layers: int):
@@ -1018,7 +1014,7 @@ TP通信流程参考[Megatron-LM论文](https://arxiv.org/pdf/1909.08053)，对�
 >
 > 与上述两者不同的就是对embedding的切分，因为这里不存在两层linear等类似结构，所以只需要一次`AllGather`将结果聚合就好，反向对应的就是`Reudce-Scatter`。
 
-#### PP
+### PP
 
 ```python
 def pipeline_parallelism_main(rank: int, world_size: int, data: tensor, num_layers: int, num_micro_batches: int):
