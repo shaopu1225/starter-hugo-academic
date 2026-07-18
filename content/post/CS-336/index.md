@@ -1139,7 +1139,13 @@ Loss and dataset size is **linear** on a *log-log* plot:
 
 在实际应用中，一般都会直接在小模型上尝试不同的data mixture，然后选择效果最好的直接推广到大模型上（因为只改变distribution shift），而不需要再对新选择的composition验证scaling law效果。
 
+#### Data repitition
 
+一昧地重复数据会导致scaling law失效；另一方面，我们所讨论的scaling law本身只是模型效果的下界，在对数据配方做更改之后很可能会训练的更好：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-18-143631.png" alt="image-20260718223631211" style="zoom:50%;" />
+
+总之，数据的选择会随着算力需求而改变，不是固定的，应当具有适应性。
 
 
 
