@@ -1107,3 +1107,41 @@ EP在MOE场景下比TP好的原因：
 但是在transformer中使用EP时，因为attention本身会使用TP做切分，所以实际上需要对attention和MLP着两个结构的并行策略做解耦：对attention使用high TP，MLP使用EP（low TP）.
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-16-115219.png" alt="image-20260716195219492" style="zoom:50%;" />
+
+## Scaling Laws
+
+### Data Scaling Laws
+
+#### dataset size -> error
+
+Loss and dataset size is **linear** on a *log-log* plot:
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-17-172054.png" alt="image-20260718012053587" style="zoom:50%;" />
+
+上图表明，Estimation error naturally decays polynomially.
+
+一些类似的例子是`mean estimation`，以及参数化估计（即对分布有先验假设的学习），error function和$-logn$成线性关系，即$\frac{1}{n}$ Scaling (n为样本数量)：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-18-025255.png" alt="image-20260718105254634" style="zoom:50%;" />
+
+对于语言模型等非参数化(`nonparametric`)估计，则是和$-\alpha logn$成线性关系，即$\frac{1}{n^\alpha}$ scaling：
+
+1. Scaling laws arise due to polynomial rates of learning $\frac{1}{n^\alpha}$
+2. Some argue the slope $\alpha$ is closely connected to the intrinsic dimensionality of the data (not always true)
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-18-025759.png" alt="image-20260718105758887" style="zoom:33%;" />
+
+#### Data composition
+
+影响interception，但是不影响slope：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-18-032727.png" alt="image-20260718112726987" style="zoom:50%;" />
+
+在实际应用中，一般都会直接在小模型上尝试不同的data mixture，然后选择效果最好的直接推广到大模型上（因为只改变distribution shift），而不需要再对新选择的composition验证scaling law效果。
+
+
+
+
+
+
+
