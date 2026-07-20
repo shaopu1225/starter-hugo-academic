@@ -1147,7 +1147,59 @@ Loss and dataset size is **linear** on a *log-log* plot:
 
 总之，数据的选择会随着算力需求而改变，不是固定的，应当具有适应性。
 
+### Model Scaling Laws
 
+从以下五个方面考虑：
 
+- Architecture
 
+要达到相同效果的GPT-3， 训练LSTM要比transformer耗费更多参数；所以transformer效果更好；
+
+- Optimizer
+
+Adam的效果要比SGD更好。
+
+- Aspect ratio / depth
+
+1. 层数太少，对效果影响很大
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-19-144809.png" alt="image-20260719224809350" style="zoom:50%;" />
+
+2. aspect ratio以及attention head dimension的最优值基本不跟随参数量改变
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-20-061745.png" alt="image-20260720141745400" style="zoom:50%;" />
+
+3. 但对`parameter`的定义范围会改变scaling law：比如是否包含embedding layer层的参数，
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-20-061838.png" alt="image-20260720141837700" style="zoom:50%;" />
+
+以及对于**MOE**，active parameter和total parameter的scaling law表现也不同：
+
+- MOE稀疏度越高，达到最好效果需要的active parameters越多；
+- MOE稀疏度越高，达到最好效果需要的total parameters越少；
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-20-062119.png" alt="image-20260720142119021" style="zoom:50%;" />
+
+- Batch size
+
+也就是之前在DP章节提到的`critical batch size`.
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-20-063920.png" alt="image-20260720143919384" style="zoom:50%;" />
+
+假设critical batch size对应的是点A，在点A之前，模型是`variance limited`，因为batch过小导致每次更新波动方差很大；在点A之后，模型是`bias limited`，意味着模型已经可以找到局部最优点，但因为梯度下降没有global view，所以和全局最优始终有`bias term`存在。
+
+> 具体参考论文：https://arxiv.org/pdf/1812.06162
+
+从scaling law的角度说，想要loss越低，需要的critical batch size越大：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-20-070027.png" alt="image-20260720150027101" style="zoom:50%;" />
+
+- LR
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-20-070756.png" alt="image-20260720150756521" style="zoom:50%;" />
+
+ 两种调整LR的方法：
+
+1. 固定最好的LR，改变模型initialization size/step size...，如右侧图所示
+2. 根据不同参数量拟合出的曲线，预测当前需要的最好的LR，如左侧图所示
 
