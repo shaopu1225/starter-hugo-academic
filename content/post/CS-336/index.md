@@ -1203,3 +1203,26 @@ Adam的效果要比SGD更好。
 1. 固定最好的LR，改变模型initialization size/step size...，如右侧图所示
 2. 根据不同参数量拟合出的曲线，预测当前需要的最好的LR，如左侧图所示
 
+#### Caution
+
+这里谈论的scaling law基本只对预训练生效：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-20-072052.png" alt="image-20260720152052036" style="zoom:50%;" />
+
+### Joint data-model scaling laws
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-20-082248.png" alt="image-20260720162248497" style="zoom:50%;" />
+
+讨论在固定FLOPS下，最佳的token和param的比值。这里只贴一种IsoFLOPS的方法：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-20-082035.png" alt="image-20260720162035378" style="zoom:50%;" />
+
+- 相比chinchilla，Kaplan的预测为什么不对？
+
+1. Kaplan removed last layer param from the count
+
+2. Warmup at very small compute budgets was too high （模型还没有完全收敛，LR还没有进入到平滑阶段）
+
+- token/param的取值
+
+在Chinchilla的原始论文中，设定为20t/p，但这个结果只是基于优化训练cost（FLOPS）的，随着推理需求的增加，我们应该做overtrain，即耗费更多一次性的训练成本，来优化推理成本（这需要训练更多tokens，过多的param反而会提升推理成本），所以当前token/param在Llama3中就被提升到了215，Mistral是110.
