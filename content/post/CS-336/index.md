@@ -1226,3 +1226,44 @@ Adam的效果要比SGD更好。
 - token/param的取值
 
 在Chinchilla的原始论文中，设定为20t/p，但这个结果只是基于优化训练cost（FLOPS）的，随着推理需求的增加，我们应该做overtrain，即耗费更多一次性的训练成本，来优化推理成本（这需要训练更多tokens，过多的param反而会提升推理成本），所以当前token/param在Llama3中就被提升到了215，Mistral是110.
+
+## Inference
+
+### Inference Workload
+
+==Fast== metrics:
+
+- Time-to-first-token (**TTFT**): how long user waits before any generation happens (for interactive applications)
+- Latency (seconds/token): how fast tokens appear for *one* query (for interactive applications)
+- Throughput (tokens/second): how fast tokens appear for *many* queries (for batch processing)
+
+#### arithmetic intensity of inference
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-20-163417.png" alt="img" style="zoom:50%;" />
+
+假设$S$是prefill阶段处理的token数量，$T$是生成的token数量（decode/generation阶段）。在prefill阶段，$T=S$，在decode阶段，$T=1$.
+
+> Assume that B*T is much smaller than D and F:
+>
+> $$D=cBT$$
+>
+> $$F=cBT$$
+>
+> $$c=\infin$$
+
+- **MLP layers**
+
+arithmetic intensity = B*T
+
+在decode阶段，B代表并发的requests数量 (所以需要更多的concurrent requests)，对于交互应用不可预测。
+
+- **Attention layers**
+
+prefill: S/2
+
+Decode: < 1 (memory-bound)
+
+#### throughput and latency
+
+
+
