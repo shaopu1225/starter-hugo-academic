@@ -1368,7 +1368,48 @@ Algorithm:
 1. draft model计算开销很小，生成同样数量的token相比标准模型更快；标准模型只需要承担验证的责任；
 2. 标注新模型可以**并行**验证多个候选token；由于草稿模型和目标模型分布近似，所以大部分token都被接受，导致开销显著降低；
 
+参考文章：
 
+> - https://zhuanlan.zhihu.com/p/27272034867
+> - https://zhuanlan.zhihu.com/p/15575453436
 
+#### Continuous batching
 
+解决面对动态workloads的挑战：
 
+> 最早在orca中被提出：https://www.usenix.org/system/files/osdi22-yu.pdf
+
+下边两张图很好的展示了continuous batching相比传统的static batching带来的收益，TTFT和资源释放时间都被优化：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-21-093018.jpg" alt="动图"  />
+
+![动图](https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-21-093104.jpg)
+
+#### Selective batching
+
+由于每次attention要处理的是一个$BST$的tensor，所以对于序列长度不同的请求，要做padding，从而导致计算浪费。
+
+- 对attention layer，对请求按照序列长度分组；
+- 对MLP layer，将所有序列合并成一个大tensor：[3,H],[9,H] --> [12,H]
+
+#### Page Attention
+
+先前的系统有两个问题：
+
+![img](https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-21-095915.png)
+
+1. Internal fragmentation：申请过多空间，但实际上没有用到那么多token
+2. External fragmentation：需要额外申请大段空间，但是在先前申请的连续大块显存中已经找不到那么大的位置，只能在别的位置重新开辟
+
+这本质上是因为CUDA自带的virtual addr机制不感知推理系统，比如无法根据序列长度等信息来决定虚拟地址分配，同时分配粒度又很粗（KB级别）。
+
+在Page attention中，是将同一个sequence的KV cache分成不连续的blocks，优势在于：
+
+1. 更加细粒度的地址分配+感知序列信息，可以缓解先前的碎片问题；
+2. 多个请求（比如`system prompt`）可以共享底层存储；（这里的思路类似OS从虚拟地址到物理地址的映射）
+
+![img](https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-21-100557.png)
+
+3. 可以共享prefixes，使用COW的方法（因为不同请求要更改同一个block，所以必须复制一份）：
+
+![img](https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-21-101141.png)
