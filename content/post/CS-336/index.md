@@ -1229,11 +1229,15 @@ Adam的效果要比SGD更好。
 
 ## Inference
 
+### KV cache
+
+参考[从矩阵运算的角度理解KV Cache](https://zhuanlan.zhihu.com/p/16080518294)。注意是一个sequence（B维度）一个cache.
+
 ### Inference Workload
 
 ==Fast== metrics:
 
-- Time-to-first-token (**TTFT**): how long user waits before any generation happens (for interactive applications)
+- Time-to-first-token (**TTFT**): how long user waits before any generation happens (for interactive applications), is a function of prefill time
 - Latency (seconds/token): how fast tokens appear for *one* query (for interactive applications)
 - Throughput (tokens/second): how fast tokens appear for *many* queries (for batch processing)
 
@@ -1264,6 +1268,107 @@ prefill: S/2
 Decode: < 1 (memory-bound)
 
 #### throughput and latency
+
+```python
+def compute_transformer_performance_stats(config) -> TransformerPerformanceStats:  
+    """Compute various performance stats for the Transformer given `config`."""
+    # Number of parameters in the Transformer
+    num_params = 2*V*D + D*F*3*L + (2*D*N*H + 2*D*K*H)*L
+    # How much memory the parameters take
+    parameter_size = 2*num_params  # 2 for bf16 (training requires a larger multiple)
+    
+    # How much the KV cache takes per sequence (S tokens, K heads, H head dim, L layers)
+    kv_cache_size_per_seq = S * (K*H) * L * 2 * 2  # 2 for key + value, 2 for bf16
+    # Total memory usage
+    memory = B * kv_cache_size_per_seq + parameter_size
+    # *Latency* is determined by memory IO (read all parameters and KV cache for each step)
+    latency = memory / memory_bandwidth
+    # *Throughput* is the inverse of latency, but we're generating B tokens in parallel
+    throughput = B / latency
+    # Substitute config
+    num_params = num_params.subs(config).simplify()  
+    memory = memory.subs(config).simplify()  
+    latency = latency.subs(config).simplify()  
+    throughput = throughput.subs(config).simplify()  
+    return TransformerPerformanceStats(num_params, memory, latency, throughput)
+```
+
+**Tradeoff** between latency and throughput:
+
+- Smaller batch sizes yield better latency but worse throughput
+
+- Larger batch sizes yield better throughput but worse latency
+
+在prefill阶段，需要小一些的BS，目的是让TTFT更快；在decode阶段，需要更大的BS，目的是让系统整体的throughput更高。
+
+### Make kv inference faster
+
+第一种方法是减小kv cache size.
+
+#### reduce kv cache size
+
+- MHA, MQA, GQA
+- MLA
+- Cross-layer attention (CLA)
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-21-071936.png" alt="img" style="zoom:50%;" />
+
+- Local (slidng window) attention
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-21-072618.png" alt="image-20260721152618025" style="zoom:50%;" />
+
+- DeepSeek v4 attention
+
+CSA/DSA/HCA...
+
+#### Quantization
+
+- **Activation-aware quantization (AWQ)**
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-21-075925.png" alt="img" style="zoom:50%;" />
+
+- **Post-training quantization (PTQ)**
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-21-080038.png" alt="image-20260721160037850" style="zoom:50%;" />
+
+#### model pruning
+
+rip out parts of an expensive model to make it cheaper, and then fix it up.
+
+```python
+Algorithm:
+    
+1. Identify important {layer, head, hidden dimension} on a small calibration dataset (1024 samples)
+    
+2. Remove unimportant layers to get a smaller model
+    
+3. Distill the original model into pruned model
+```
+
+#### Speculative sampling
+
+相比上述方法，这种方法是`lossless`的。核心在优化decode阶段：
+
+利用一个高效的，模型结构较小的近似模型$M_p$生成候选tokens，然后通过目标模型$M_q$验证候选token的合理性，对于合理的token，直接加入当前的输入前缀中，否则**从被拒绝的第一个token x开始，往后的所有token都会在被调整后的分布$p'(x)$中做新一轮的投机解码**。
+
+> 由于这个性质，如果每个token被接受的概率是$\alpha$，那将最后加入前缀的数量$n$拆成多个是否存活的随机变量$I_i$，1表示被接受，0表示被拒绝，则：
+>
+> $$n=I_1+I_2+...+I_k$$
+>
+> 对两边同时取期望，又：
+>
+> $$E(I_i)=1\times P(I_i=1)+0\times P(I_i=0)$$，且$P(I_i=1)=\alpha^i$，
+>
+> 所以是一个等比数列求和：
+>
+> $$E(n)=\frac{1-\alpha^{k+1}}{1-\alpha}$$
+
+这种方法的优势在于：
+
+1. draft model计算开销很小，生成同样数量的token相比标准模型更快；标准模型只需要承担验证的责任；
+2. 标注新模型可以**并行**验证多个候选token；由于草稿模型和目标模型分布近似，所以大部分token都被接受，导致开销显著降低；
+
+
 
 
 
