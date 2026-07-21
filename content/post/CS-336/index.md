@@ -898,7 +898,7 @@ a_ptrs = a_ptr + indices_m[:, None] * stride_am + indices_k[None, :] * stride_ak
 
 为什么DP不够用？
 
-因为随着机器数量的增加，首先每个节点上的样本不能太少，否则通信开销占比过大；其次如果每个机器上样本过多，如果超过`critical batch size`，在batch梯度中，从噪声主导区进入有效梯度信号主导区，梯度已经比较准确，那么继续增大batch，收敛速度不会线性增长：
+因为随着机器数量的增加，首先每个节点上的样本不能太少，否则通信开销占比过大；其次如果每个机器上样本过多，如果超过`critical batch size`，在batch梯度中，从噪声(variance)主导区进入有效梯度信号主导区，梯度已经比较准确，那么继续增大batch，收敛速度不会线性增长，在model scaling law的章节也有讨论：
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-16-065614.png" alt="image-20260716145613698" style="zoom:50%;" />
 
@@ -1194,14 +1194,29 @@ Adam的效果要比SGD更好。
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-20-070027.png" alt="image-20260720150027101" style="zoom:50%;" />
 
+可以这样理解：想要达到的loss越低，越要控制梯度噪声（variance）的影响，所以需要更大的BS，让梯度在正确的极值方向上。
+
 - LR
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-20-070756.png" alt="image-20260720150756521" style="zoom:50%;" />
 
  两种调整LR的方法：
 
-1. 固定最好的LR，改变模型initialization size/step size...，如右侧图所示
-2. 根据不同参数量拟合出的曲线，预测当前需要的最好的LR，如左侧图所示
+1. 找到最好的LR，然后通过改变模型initialization size/step size...，避免每次scale都要调整LR，如右侧图所示，这种方法被称为$\mu p$；
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-21-143618.png" alt="image-20260721223618066" style="zoom:50%;" />
+
+2. 根据不同参数量拟合出的曲线，预测当前需要的最好的LR，最佳LR会随着width而改变；如左侧图所示，这是传统的scaling方法；
+
+此外，**近两年主流LLM都采用cosine decay的学习率策略，但它有个关键问题，就是对续训很不友好**。早在Chinchilla的工作中就提到，cosine策略的[衰减周期](https://zhida.zhihu.com/search?content_id=244121724&content_type=Article&match_order=1&q=衰减周期&zhida_source=entity)需要与训练步数一致，过短或过长都不会收敛到当前的局部最优：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-21-164232.png" alt="img" style="zoom: 67%;" />
+
+所以不能从一个预期训练10K step的模型上直接拿出5k step的ckpt续训一个6K step的模型。而miniCPM的WSD解决了这个问题，即快速warmup后，一大段时间内使用固定学习率，在最后快速衰减到小的学习率。如下图：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-21-164417.png" alt="img" style="zoom:67%;" />
+
+这个策略在小尺寸模型上的收敛效果很好，甚至快速衰减后还可以超过[cosine](https://zhida.zhihu.com/search?content_id=244121724&content_type=Article&match_order=4&q=cosine&zhida_source=entity)的表现。**WSD策略对续训就更加友好，只要拿到之前固定学习率的ckpt就可以继续训练，节省了很多计算资源**。
 
 #### Caution
 
