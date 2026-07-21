@@ -1249,7 +1249,7 @@ Adam的效果要比SGD更好。
 >
 > $$F=cBT$$
 >
-> $$c=\infin$$
+> $$c=\inf$$
 
 - **MLP layers**
 
