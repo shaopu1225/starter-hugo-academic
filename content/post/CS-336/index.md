@@ -1256,6 +1256,10 @@ TODO: 参考 https://kexue.fm/archives/10592。
 
 可以简单理解成做了一个一阶动量的正交化：将奇异值压到相近尺度，抑制大方向并增强其他有效方向。
 
+来自苏神：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-22-162655.png" alt="image-20260723002654604" style="zoom:50%;" />
+
 具体而言，使用muon优化器的梯度下降利用了2范数来度量矩阵不同元素的差异。
 
 ### muP
