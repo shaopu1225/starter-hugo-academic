@@ -356,7 +356,9 @@ $$<R_aX,R_bY>=(R_aX)^TR_bY=X^TR_a^TR_bY=X^TR_{b-a}Y=<X,R_{b-a}Y>$$
 
 $$FFN(x)=max(0,xW_1+b_1)W_2+b_2$$
 
-一般都有$d_{ff}=4d_{model}$或者$d_ff=2.66d_{model}$.
+其中，$d_{ff}$表示中间层的输出维度，$d_{model}$为transformer层的输出维度。
+
+一般都有$d_{ff}=4d_{model}$或者$d_{ff}=2.66d_{model}$.
 
 - **Head_dim * num_heads to model-dim ratio**
 
@@ -1110,6 +1112,8 @@ EP在MOE场景下比TP好的原因：
 
 ## Scaling Laws
 
+在实际做pre-train时，因为每家的训练配置差别比较大，所以往往无法直接利用现有的scaling law analysis结果（比如chinchilla rule），需要自己做一遍分析（比如Stepfun、DeepSeek、MiNiCPM都做了类似的事情）。
+
 ### Data Scaling Laws
 
 #### dataset size -> error
@@ -1158,6 +1162,8 @@ Loss and dataset size is **linear** on a *log-log* plot:
 - Optimizer
 
 Adam的效果要比SGD更好。
+
+
 
 - Aspect ratio / depth
 
@@ -1243,6 +1249,16 @@ Adam的效果要比SGD更好。
 在Chinchilla的原始论文中，设定为**20t/p**，但这个结果只是基于优化训练cost（FLOPS）的，随着推理需求的增加，我们应该做overtrain，即耗费更多一次性的训练成本，来优化推理成本（这需要训练更多tokens，过多的param反而会提升推理成本），所以当前token/param在Llama3中就被提升到了215，Mistral是110.
 
 基于这种data-model joint scaling laws prediction， 以及WSD的学习率下降方法，可以用消耗较少资源的方法，得到$D/N$的最优解。在MiNiCPM中，对于每一组不同参数量($N$)的模型，可以用WSD训练一个有较多tokens($D$)的模型，然后在其训练过程中的LR stable phase保存多个不同token量级的ckpt，以及其对应的loss，并绘制出如上方所示的曲线图，得到在这个模型中最优的数据/参数配比。
+
+### muon
+
+TODO: 参考 https://kexue.fm/archives/10592。
+
+可否理解成做了一个一阶动量的正交化？将奇异值压到相近尺度，抑制大方向并增强其他有效方向。
+
+### muP
+
+
 
 ## Inference
 
