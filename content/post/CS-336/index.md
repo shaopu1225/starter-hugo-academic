@@ -1212,11 +1212,11 @@ Adam的效果要比SGD更好。
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-21-164232.png" alt="img" style="zoom: 67%;" />
 
-所以不能从一个预期训练10K step的模型上直接拿出5k step的ckpt续训一个6K step的模型。而miniCPM的WSD解决了这个问题，即快速warmup后，一大段时间内使用固定学习率，在最后快速衰减到小的学习率。如下图：
+所以不能从一个预期训练10K step的模型上直接拿出5k step的ckpt续训一个6K step的模型。而MiNiCPM的WSD解决了这个问题，即快速warmup后，一大段时间内使用固定学习率，在最后快速衰减到小的学习率。如下图：
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-21-164417.png" alt="img" style="zoom:67%;" />
 
-这个策略在小尺寸模型上的收敛效果很好，甚至快速衰减后还可以超过[cosine](https://zhida.zhihu.com/search?content_id=244121724&content_type=Article&match_order=4&q=cosine&zhida_source=entity)的表现。**WSD策略对续训就更加友好，只要拿到之前固定学习率的ckpt就可以继续训练，节省了很多计算资源**。
+这个策略的核心意义在于让训练中途保存的ckpt尽可能接近真实训练到这个进度的ckpt；在小尺寸模型上的收敛效果很好，甚至快速衰减后还可以超过[cosine](https://zhida.zhihu.com/search?content_id=244121724&content_type=Article&match_order=4&q=cosine&zhida_source=entity)的表现。**WSD策略对续训就更加友好，只要拿到之前固定学习率的ckpt就可以继续训练，节省了很多计算资源**，不再需要train from scratch.
 
 #### Caution
 
@@ -1240,7 +1240,9 @@ Adam的效果要比SGD更好。
 
 - token/param的取值
 
-在Chinchilla的原始论文中，设定为20t/p，但这个结果只是基于优化训练cost（FLOPS）的，随着推理需求的增加，我们应该做overtrain，即耗费更多一次性的训练成本，来优化推理成本（这需要训练更多tokens，过多的param反而会提升推理成本），所以当前token/param在Llama3中就被提升到了215，Mistral是110.
+在Chinchilla的原始论文中，设定为**20t/p**，但这个结果只是基于优化训练cost（FLOPS）的，随着推理需求的增加，我们应该做overtrain，即耗费更多一次性的训练成本，来优化推理成本（这需要训练更多tokens，过多的param反而会提升推理成本），所以当前token/param在Llama3中就被提升到了215，Mistral是110.
+
+基于这种data-model joint scaling laws prediction， 以及WSD的学习率下降方法，可以用消耗较少资源的方法，得到$D/N$的最优解。在MiNiCPM中，对于每一组不同参数量($N$)的模型，可以用WSD训练一个有较多tokens($D$)的模型，然后在其训练过程中的LR stable phase保存多个不同token量级的ckpt，以及其对应的loss，并绘制出如上方所示的曲线图，得到在这个模型中最优的数据/参数配比。
 
 ## Inference
 
