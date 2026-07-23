@@ -1452,3 +1452,11 @@ Algorithm:
 3. 可以共享prefixes，使用COW的方法（因为不同请求要更改同一个block，所以必须复制一份）：
 
 ![img](https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-21-101141.png)
+
+## Evaluation
+
+- **Perplexity**
+
+困惑度越低，模型性能越好
+
+> https://zhuanlan.zhihu.com/p/651410752
