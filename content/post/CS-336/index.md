@@ -1463,7 +1463,19 @@ Algorithm:
 
 ## Data
 
-没做笔记。
+没做笔记。这部分主要讲**预训练**使用的数据集。
 
 ## Mid/Post-Training
+
+在预训练之后，还要让模型学会：**当用户以问题形式询问时，应该如何利用已有知识给出合适回答**。
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-24-160456.png" alt="image-20260725000456287" style="zoom:50%;" />
+
+基本流程是SFT+RLHF。
+
+SFT的数据经历了一些迭代：从一开始的大量数据集中抽取的NLP格式的对话数据集，变成人类对话模式，并且添加了更多细节的数据集；再到侧重于工具使用，以及agent友好的数据集：
+
+- “Chattiness” – FLAN is (usually) valid data, but people don’t want to talk to a NLP benchmark. Later datasets move towards longer, more detailed responses
+- Detail – OASST goes into much more detail about various factual pieces of knowledge. As we will see, this can be both a pro and a con.
+- Tool use – SFT in the last year or two has also been shifting much more towards tool/use, agentic downstream applications. 
 
