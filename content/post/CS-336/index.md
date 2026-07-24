@@ -1467,11 +1467,13 @@ Algorithm:
 
 ## Mid/Post-Training
 
-在预训练之后，还要让模型学会：**当用户以问题形式询问时，应该如何利用已有知识给出合适回答**。
+在预训练之后，还要让模型学会：**当用户以问题形式询问时，应该如何利用==已有知识==给出合适回答**。
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-24-160456.png" alt="image-20260725000456287" style="zoom:50%;" />
 
 基本流程是SFT+RLHF。
+
+### Datasets
 
 SFT的数据经历了一些迭代：从一开始的大量数据集中抽取的NLP格式的对话数据集，变成人类对话模式，并且添加了更多细节的数据集；再到侧重于工具使用，以及agent友好的数据集：
 
@@ -1479,3 +1481,12 @@ SFT的数据经历了一些迭代：从一开始的大量数据集中抽取的NL
 - Detail – OASST goes into much more detail about various factual pieces of knowledge. As we will see, this can be both a pro and a con.
 - Tool use – SFT in the last year or two has also been shifting much more towards tool/use, agentic downstream applications. 
 
+### knowledge extraction and alignment
+
+一个例子是在每个回答的最后都贴一段reference（`tail knowledge`），但是这些ref未必在原有的（模型在预训练阶段已经见过的）数据集中。
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-24-162758.png" alt="image-20260725002758199" style="zoom:50%;" />
+
+这种让模型在SFT阶段学习它未知的信息的行为，容易让模型产生幻觉， 比如右侧的`train unknown`曲线，并没有像`train known`曲线一样快速上升（因为模型本身就具备这些知识），但后来也达到了一样的高度，但模型知识学习到了：“每次输出回答，我都要生成一个看起来像reference的东西”。
+
+John Schulman认为这也是需要RL的原因之一，因为RL提供了学习知识边界的正确目标形式。
