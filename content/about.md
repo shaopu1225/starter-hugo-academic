@@ -16,7 +16,7 @@ Also, I have a 4-year experience on building intelligence robotic systems during
 
 - EFORT robotic arm plays Gomoku (Five-in-a-Row) against a human. [video](https://www.bilibili.com/video/BV1PK411372y/?spm_id_from=333.1387.upload.video_card.click&vd_source=9daa77e3f941b5cdf3dc6826ea5b55b2)
 
-- Human-Robot Interation. [code](https://github.com/Mi-Dora/Human-Robot-Interaction)
+- ROS2 Turtlebot Human-Robot Multimodal Interation. [code](https://github.com/Mi-Dora/Human-Robot-Interaction)
 
 ## Education
 
