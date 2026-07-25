@@ -455,6 +455,14 @@ linear attention的优劣明显：
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-07-143749.png" alt="image-20260707223748868" style="zoom:50%;" />
 
+> - 为什么可以表示成这种形式？
+>
+> $\phi(QK^T)V$ -> $Q\phi(K^TV)$，令$S=K^TV$，$S$的shape为$(d\times d)$，注意到$K=[K_0, K_1,...,K_n]$，$V=[V_0, V_1, ..., V_n]^T$，则$S=\sum^n_{i=0}K_iV_i$，那么显然有$S_{i+1}=S_i+K_iV_i$，在训练和推理时都适用。
+>
+> - 这种形式有什么好处？
+>
+> 可以大幅降低KV cache size，提升推理速度（因为read/write减少），相比于之前要保存每一轮推理后更新的KV矩阵，现在只需要保存S矩阵即可，而S矩阵是一个$d\times d$的矩阵。
+
 因为推理时的token是逐个喂进来的，所以这种串行形式适合推理。
 
 - 劣势：不适合训练，因为无法并行：由于*casual mask*的存在，导致对每个Q token，不能使用一致的K\^TV矩阵，必须按照上边展示的那种kv逐次递增的方法来做。
