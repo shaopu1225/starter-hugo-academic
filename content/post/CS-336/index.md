@@ -1481,7 +1481,9 @@ Algorithm:
 
 基本流程是SFT+RLHF。
 
-### Datasets
+### SFT
+
+#### Datasets
 
 SFT的数据经历了一些迭代：从一开始的大量数据集中抽取的NLP格式的对话数据集，变成人类对话模式，并且添加了更多细节的数据集；再到侧重于工具使用，以及agent友好的数据集：
 
@@ -1489,7 +1491,7 @@ SFT的数据经历了一些迭代：从一开始的大量数据集中抽取的NL
 - Detail – OASST goes into much more detail about various factual pieces of knowledge. As we will see, this can be both a pro and a con.
 - Tool use – SFT in the last year or two has also been shifting much more towards tool/use, agentic downstream applications. 
 
-### knowledge extraction and alignment
+#### knowledge extraction and alignment
 
 一个例子是在每个回答的最后都贴一段reference（`tail knowledge`），但是这些ref未必在原有的（模型在预训练阶段已经见过的）数据集中。
 
@@ -1499,6 +1501,40 @@ SFT的数据经历了一些迭代：从一开始的大量数据集中抽取的NL
 
 John Schulman认为这也是需要RL的原因之一，因为RL提供了学习知识边界的正确目标形式。
 
-### safety
+#### safety
 
 其实不仅仅是safety，SFT阶段只要少量的样本就可以产生很大的影响。
+
+### Mid-training
+
+在SFT之前，pre-training的LR decay阶段，会遭保留部分通用预训练数据的基础上，**提高高质量、专业化数据的比例**（这部分数据没有出现在pre-train stable LR的原因是因为token不够），从而将预训练过程拆分成pretrain+mid-training的two-phase training:
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-25-070024.png" alt="image-20260725150023895" style="zoom:50%;" />
+
+### RLHF
+
+与在预训练以及SFT阶段拟合模型分布$q(y|x)$贴近目标分布$p(y|x)$不同，RLHF要找到一个$q(y|x)$来最大化reward $R(y,x)$.
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-25-072706.png" alt="image-20260725152705653" style="zoom:50%;" />
+
+现在常使用model-based annotations来生成/增强后训练数据，因为人力成本太贵而且耗时。
+
+RLHF优化的目标函数$J(\theta)$为$E(R(x,y))-\beta D_{KL}(\pi_\theta||\pi_{SFT})$；这表明：
+
+1. 提高 reward 高的回答概率；
+2. 同时不让优化目标偏离SFT本身的分布太多；
+
+#### PPO
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-26-154440.png" alt="image-20260726234440665" style="zoom:50%;" />
+
+从`on-policy`到`off-policy`（采样一次，过多次optimization step），又从实现较为复杂的TRPO进化到了PPO。
+
+#### DPO
+
+- 不再训练奖励模型，直接使用人类标注的偏好数据，一步到位训练对齐模型
+- 不再使用强化学习的方法，通过数学推理，将原始的偏好对齐优化目标步步简化，最后通过类似于sft的方式，用更简化的步骤训练出对齐模型
+
+> 具体参考：https://zhuanlan.zhihu.com/p/721073733
+
+RLHF存在over-optimization的问题，如果训练数据过多，容易对奖励模型过拟合。
