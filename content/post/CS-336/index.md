@@ -1521,7 +1521,7 @@ John Schulman认为这也是需要RL的原因之一，因为RL提供了学习知
 
 RLHF优化的目标函数$J(\theta)$为$E(R(x,y))-\beta D_{KL}(\pi_\theta||\pi_{SFT})$；这表明：
 
-1. 提高 reward 高的回答概率；
+1. 提高 reward 高的回答概率;
 2. 同时不让优化目标偏离SFT本身的分布太多；
 
 #### PPO
@@ -1529,6 +1529,28 @@ RLHF优化的目标函数$J(\theta)$为$E(R(x,y))-\beta D_{KL}(\pi_\theta||\pi_{
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-26-154440.png" alt="image-20260726234440665" style="zoom:50%;" />
 
 从`on-policy`到`off-policy`（采样一次，过多次optimization step），又从实现较为复杂的TRPO进化到了PPO。
+
+- Policy Gradients公式的来源：
+
+为了解决采样过程（即从分布$p_0$中采样$z$，并生成reward $R(z)$）本身不可微的问题，等式右侧的log probability可微，所以在梯度下降时，通过右侧等式告诉模型对于高reward的回答($R(z)>0$)增大它的概率，对于低reward($R(z)<0$)的回答，降低它的概率。
+
+> $$E_{p_\theta}[R(z)]=\sum_{z}p_\theta(z)R(z)$$
+>
+> $$\nabla_\theta E_{p_\theta}[R(z)]=\nabla_\theta\sum_{z}p_\theta(z)R(z)=\sum_{z}\nabla_\theta p_\theta(z)R(z)$$
+>
+> 又 $R(z)$与参数无关，故：
+>
+> 上式等价于$$\sum_zR(z)\nabla_\theta p_\theta(z)$$
+>
+> 引入log trick，即通过log函数的求导公式变换得到:
+>
+> $$\nabla_\theta p_\theta(z)=p_\theta(z)\nabla_\theta \log p_\theta(z)$$
+>
+> 代入上式得到：
+>
+> $$\nabla_\theta E_{p_\theta}[R(z)])=E{p_\theta}[R(z)\nabla_\theta \log p_\theta(z)]$$
+
+- 在TRPO和PPO中，$\frac{\pi_\theta}{{\pi_{old}}}$作为重要性采样比率（`importance sampling ratio`），也就是现在这个策略有多想做这个动作->相比采样数据时的旧策略变化了多少；TRPO和PPO本质上都是在控制优化策略不偏离SFT分布太远，只是PPO采用了工程上更容易实现的手段。
 
 #### DPO
 
