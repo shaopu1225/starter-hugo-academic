@@ -1589,3 +1589,4 @@ $$A_i=\frac{r_i-mean[r_1,r_2, ..., r_G]}{std[r_1,r_2, ..., r_G]}$$
 
 因为总体上希望让奖励值更高，所以对于positive advantages，相比于长回答，反而会激励更短的回答，对于negative advantages，会激励更长的响应。
 
+关于课程后续的几个模型的分析内容，之后会列在单独的blog中做整个report的分析。
