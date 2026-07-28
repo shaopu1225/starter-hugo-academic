@@ -1559,4 +1559,10 @@ RLHF优化的目标函数$J(\theta)$为$E(R(x,y))-\beta D_{KL}(\pi_\theta||\pi_{
 
 > 具体参考：https://zhuanlan.zhihu.com/p/721073733
 
+上文中的分析已经非常详尽了，核心目的是让优化目标中不出现$R(z)$，也就是找到一种方法，使用$\pi(y|x)$来表示$R(z)$，通过将原始的优化目标的分子分母全部利用配分函数(`partition function`)表示为概率分布的形式，就可以利用优化KL散度的目标来优化模型：KL散度是相对熵，在两分布最接近时最小，从而模型$\pi$有显式解：
+
+$$\pi(y|x)=\frac{1}{Z(x)}\pi_{ref}(y|x)\exp (\frac{1}{\beta}r(y|x))$$
+
+这也就是我们找到的奖励函数与策略分布之间的关系，利用该等式，结合`Bradley-Terry`模型或者`Plackett-Luce`模型对有优化目标建模并替代其中的奖励函数部分，即可拿到直接优化对齐模型的loss function。
+
 RLHF存在over-optimization的问题，如果训练数据过多，容易对奖励模型过拟合。
