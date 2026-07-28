@@ -1511,7 +1511,7 @@ John Schulman认为这也是需要RL的原因之一，因为RL提供了学习知
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-25-070024.png" alt="image-20260725150023895" style="zoom:50%;" />
 
-### RLHF
+### RLHF/RLVR
 
 与在预训练以及SFT阶段拟合模型分布$q(y|x)$贴近目标分布$p(y|x)$不同，RLHF要找到一个$q(y|x)$来最大化reward $R(y,x)$.
 
@@ -1528,7 +1528,7 @@ RLHF优化的目标函数$J(\theta)$为$E(R(x,y))-\beta D_{KL}(\pi_\theta||\pi_{
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-26-154440.png" alt="image-20260726234440665" style="zoom:50%;" />
 
-从`on-policy`到`off-policy`（采样一次，过多次optimization step），又从实现较为复杂的TRPO进化到了PPO。
+从`on-policy`到`off-policy`（采样一次，过多次optimization step），又从实现较为复杂的TRPO进化到了PPO。当然PPO也可以online的做，那样它的$\frac{\pi_\theta}{\pi_{old}}$的比值将永远是1，意味着clip实际没有作用。
 
 - Policy Gradients公式的来源：
 
@@ -1550,7 +1550,7 @@ RLHF优化的目标函数$J(\theta)$为$E(R(x,y))-\beta D_{KL}(\pi_\theta||\pi_{
 >
 > $$\nabla_\theta E_{p_\theta}[R(z)])=E{p_\theta}[R(z)\nabla_\theta \log p_\theta(z)]$$
 
-- 在TRPO和PPO中，$\frac{\pi_\theta}{{\pi_{old}}}$作为重要性采样比率（`importance sampling ratio`），也就是现在这个策略有多想做这个动作->相比采样数据时的旧策略变化了多少；TRPO和PPO本质上都是在控制优化策略不偏离SFT分布太远，只是PPO采用了工程上更容易实现的手段。
+- 在TRPO和PPO中，$\frac{\pi_\theta}{{\pi_{old}}}$作为重要性采样比率（`importance sampling ratio`），也就是现在这个策略有多想做这个动作->相比采样数据时的旧策略变化了多少；TRPO和PPO本质上都是在控制优化策略不偏离SFT分布太远，只是PPO采用了工程上更容易实现的手段。其中的$A_t$定义为$A_t=Q(s,t)-V_t$，其中$Q$为执行action后的未来总收益，$V$为**value function**或者说**critic model**衡量的当前状态平均收益。
 
 #### DPO
 
@@ -1559,10 +1559,33 @@ RLHF优化的目标函数$J(\theta)$为$E(R(x,y))-\beta D_{KL}(\pi_\theta||\pi_{
 
 > 具体参考：https://zhuanlan.zhihu.com/p/721073733
 
-上文中的分析已经非常详尽了，核心目的是让优化目标中不出现$R(z)$，也就是找到一种方法，使用$\pi(y|x)$来表示$R(z)$，通过将原始的优化目标的分子分母全部利用配分函数(`partition function`)表示为概率分布的形式，就可以利用优化KL散度的目标来优化模型：KL散度是相对熵，在两分布最接近时最小，从而模型$\pi$有显式解：
+上文中的分析已经非常详尽了，核心目的是让优化目标中不出现$R(z)$，也就是找到一种方法，使用$\pi(y|x)$来表示$R(z)$，**通过将原始的优化目标的分子分母全部利用配分函数(`partition function`)表示为概率分布的形式，就可以利用优化KL散度的目标来优化模型**：KL散度是相对熵，在两分布最接近时最小，从而模型$\pi$有显式解：
 
 $$\pi(y|x)=\frac{1}{Z(x)}\pi_{ref}(y|x)\exp (\frac{1}{\beta}r(y|x))$$
 
-这也就是我们找到的奖励函数与策略分布之间的关系，利用该等式，结合`Bradley-Terry`模型或者`Plackett-Luce`模型对有优化目标建模并替代其中的奖励函数部分，即可拿到直接优化对齐模型的loss function。
+这也就是我们找到的奖励函数与策略分布之间的关系，利用该等式，结合`Bradley-Terry`模型或者`Plackett-Luce`模型对有优化目标建模并替代其中的奖励函数部分，即可拿到直接优化对齐模型的loss function。但这也是DPO没有被广泛应用的一个原因，即DPO需要这种`pairwise`的回答输出格式，但并非所有问题都具备这种结构，比如一些数学问题，所以PPO还是更普遍的RLHF方法。
 
-RLHF存在over-optimization的问题，如果训练数据过多，容易对奖励模型过拟合。
+RLHF存在over-optimization的问题，如果训练数据过多，容易对奖励模型过拟合；因为这和优化alphaGO等问题不一样，我们不是在像alphaGO一样，确切的在训练模型实际被使用的场景。
+
+#### GRPO
+
+相比PPO，GPRO将`value function`拿掉，将平均收益的衡量变成用当前策略采样N组的平均收益。
+
+- GRPO效果问题：
+
+从最基本的**policy gradient**出发，对reward function减去任何`state-dependent term`都可以成立：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-28-150501.png" alt="image-20260728230501472" style="zoom:50%;" />
+
+但GRPO恰恰多除以了一个标准差：
+
+$$A_i=\frac{r_i-mean[r_1,r_2, ..., r_G]}{std[r_1,r_2, ..., r_G]}$$
+
+这意味着在采样标准差很小时，对效果的影响会比较大，比如问题很简单或者很难，每次正确率都是100%或者0%，这种情况其实是我们不想要的。
+
+此外，当前主流实现还会除上一个采样回答的序列长度（`length normalization`）：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-28-151007.png" alt="image-20260728231006809" style="zoom:50%;" />
+
+因为总体上希望让奖励值更高，所以对于positive advantages，相比于长回答，反而会激励更短的回答，对于negative advantages，会激励更长的响应。
+
