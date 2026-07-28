@@ -1513,7 +1513,7 @@ John Schulman认为这也是需要RL的原因之一，因为RL提供了学习知
 
 ### RLHF/RLVR
 
-与在预训练以及SFT阶段拟合模型分布$q(y|x)$贴近目标分布$p(y|x)$不同，RLHF要找到一个$q(y|x)$来最大化reward $R(y,x)$.
+与在预训练以及SFT阶段拟合模型分布$q(y|x)$贴近目标分布$p(y|x)$不同，RLHF要找到一个$q(y|x)$来最大化reward $R(y,x)$. 这样做的好处是让模型自己**search over reasoning trajectories**，而不是类似SFT那种强制制定标准答案的方法(从告诉你应该输出什么，到告诉你输出结果好不好)，这能充分激发模型的reasoning能力。
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-25-072706.png" alt="image-20260725152705653" style="zoom:50%;" />
 
