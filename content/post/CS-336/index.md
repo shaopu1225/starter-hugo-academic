@@ -1589,4 +1589,89 @@ $$A_i=\frac{r_i-mean[r_1,r_2, ..., r_G]}{std[r_1,r_2, ..., r_G]}$$
 
 因为总体上希望让奖励值更高，所以对于positive advantages，相比于长回答，反而会激励更短的回答，对于negative advantages，会激励更长的响应。
 
-关于课程后续的几个模型的分析内容，之后会列在单独的blog中做整个report的分析。
+关于课程后续的几个模型后训练部分的分析内容，有机会会列在单独的blog中做整个report的分析。
+
+## Alignment - MultiModallity
+
+最终目标：Omni Model
+
+- Input any combination of modalities (understanding)
+- Output any combination of modalities (generation)
+
+### CLIP
+
+CLIP (Contrastive Language-Image Pretraining)
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-31-154607.png" alt="img" style="zoom:50%;" />
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-08-01-072925.png" alt="img" style="zoom:50%;" />
+
+输入batch $(I_1, T_1), (I_2,T_2), ..., (I_n, T_n)$；
+
+经过两个encoder和投影+归一化之后，得到 $u_i\in\mathbb R^d,v_j\in\mathbb R^d$，并且$\|u_i\|_2=\|v_j\|_2=1$。所以上面点积构造的就是一个相似度矩阵，其中$s_{ij}=\alpha u_i^Tv_j$，其中$\alpha$是可学习的logit scale：
+
+$$S= \begin{bmatrix} s_{11}&s_{12}&\cdots&s_{1n}\\ s_{21}&s_{22}&\cdots&s_{2n}\\ \vdots&\vdots&\ddots&\vdots\\ s_{n1}&s_{n2}&\cdots&s_{nn} \end{bmatrix}$$
+
+对`image2text loss`和`text2image loss`，只需要看一种情况即可，以`image2text loss`为例：
+
+对每行做softmax：
+
+$$p_{ij}=P(T_j|I_i)=\frac{e^{s_{ij}}}{\sum^n_{k=1}e^{s_{ik}}}$$
+
+根据交叉熵定义：
+
+$$\ell_i = -\sum_{j=1}^{n}y_{ij}\log p_{ij}$$
+
+由于one-hot label在一行内只有一个位置是1，故：
+
+$$\ell_i^{I\to T} = -\log p_{ii}$$
+
+代入并整合:
+
+$$\ell_i^{I\to T} = -s_{ii} + \log\sum_{j=1}^{n}e^{s_{ij}}$$
+
+整个batch的`image2text loss`为：
+
+$$L_{I\to T} = \frac1n\sum_{i=1}^{n}\ell_i^{I\to T}$$
+
+对第$i$行的某个$s_{ij}$求导：
+
+- 对于对角线位置(i==j)
+
+$$\frac{\partial \ell_i}{\partial s_{ii}} = p_{ii}-1 \lt 0$$
+
+则$s_{ii}$在梯度下降后变大。
+
+- 对于非对角线位置(i!=j)
+
+$$\frac{\partial \ell_i}{\partial s_{ii}} = p_{ii} \gt 0$$
+
+则$s_{ij}$在梯度下降后变小。
+
+`text2image loss`同理，所以结论是：
+
+- 对每一张图片，更倾向于和其`aligned`的text；
+- 对每段text，更倾向于和其`aligned`的图片；
+
+> 当目标标签是对角矩阵、loss 是 ==softmax cross-entropy== 时，对相似度矩阵的负梯度方向必然提高对角项、降低非对角项.
+>
+> 更一般的规律是：预测概率矩阵$P$会被推动着接近目标矩阵 $Y$。
+>
+> CLIP 里恰好：
+>
+> $$ Y=I_n $$
+>
+> 所以看起来是“朝对角线前进”。
+
+#### ViT
+
+Vision Encoder:
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-08-01-075716.png" alt="img" style="zoom:50%;" />
+
+- Attention pooling: do QKV with query = global average of activations
+
+上述CLIP方法存在的问题：需要比较大的BS（因为样例本身包含了label信息），同时softmax操作是对整个batch做的，没办法很好的并行。
+
+### siglip
+
