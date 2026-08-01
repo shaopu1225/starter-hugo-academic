@@ -1693,3 +1693,5 @@ siglip的优势在于较快的训练速度，因为其不和BS绑定，loss func
 
 ### Inject image encodings into LLMs
 
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-08-01-104147.png" alt="img" style="zoom:50%;" />
+
