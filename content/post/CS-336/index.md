@@ -1598,7 +1598,9 @@ $$A_i=\frac{r_i-mean[r_1,r_2, ..., r_G]}{std[r_1,r_2, ..., r_G]}$$
 - Input any combination of modalities (understanding)
 - Output any combination of modalities (generation)
 
-### CLIP
+### Vision Encoder
+
+#### CLIP
 
 CLIP (Contrastive Language-Image Pretraining)
 
@@ -1663,7 +1665,7 @@ $$\frac{\partial \ell_i}{\partial s_{ii}} = p_{ii} \gt 0$$
 >
 > 所以看起来是“朝对角线前进”。
 
-#### ViT
+##### ViT
 
 Vision Encoder:
 
@@ -1673,5 +1675,21 @@ Vision Encoder:
 
 上述CLIP方法存在的问题：需要比较大的BS（因为样例本身包含了label信息），同时softmax操作是对整个batch做的，没办法很好的并行。
 
-### siglip
+#### siglip
+
+将CLIP的多分类问题转化为一个二分类问题，即判定$(T_i,I_j)$是否是对齐的配对。
+
+之前的多分类问题来源于多种label的存在，所以使用了softmax，这里将label $y_{ij}$转化为只有$(-1,1)$矩阵的形式。同时建立损失函数为：
+
+$$\ell_{ij} = -\log\sigma(y_{ij}s_{ij})$$
+
+其中$\sigma$为`log-sigmoid`函数，这里的计算是逐元素乘法。
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-08-01-092926.png" alt="img" style="zoom:50%;" />
+
+siglip的优势在于较快的训练速度，因为其不和BS绑定，loss function的计算可以在不同设备上并行执行：
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-08-01-093022.png" alt="img" style="zoom:50%;" />
+
+### Inject image encodings into LLMs
 
