@@ -1695,3 +1695,22 @@ siglip的优势在于较快的训练速度，因为其不和BS绑定，loss func
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-08-01-104147.png" alt="img" style="zoom:50%;" />
 
+关于qwen系列多模态的细节介绍，也会放到单独的blog里讲。
+
+### Omni model
+
+与VLM不同的是：VLM往往需要多模态输入+text输出，但是对于omni model，更希望做到多模态输入+多模态输出。所以需要将图片/声音等也组织称文本一样，离散的、可以逐token预测的vocabulary。
+
+使用CLIP/SIGLIP类似的将图片直接转化成连续向量的方法无法让LLM生成多模态内容，因为此时的输出向量是任意的$d$维实数向量，并非在一个固定的词表里查找得到的。
+
+所以一个自然的思路是将多模态输入也`tokenization`。
+
+#### VQ-VAE
+
+一种思路是VQ-VAE. 
+
+<img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-08-01-130721.png" alt="img" style="zoom:50%;" />
+
+- Encodes 512 x 512 image into 1024 tokens (codebook of size 8192)
+
+- Train a new BPE tokenizer
