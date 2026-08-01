@@ -7,6 +7,7 @@
   --link: #3273dc;
   --visited: #8e32dc;
   --soft: #f2f2f2;
+  --mark: #dcf3df;
   --border: #999;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco,
     Consolas, "Liberation Mono", monospace;
@@ -74,6 +75,15 @@ main a:visited {
 
 a:hover {
   text-decoration-thickness: 2px;
+}
+
+mark {
+  padding: 0.08em 0.2em;
+  border-radius: 0.2em;
+  background: var(--mark);
+  color: inherit;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
 }
 
 .site-header {
