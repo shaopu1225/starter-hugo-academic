@@ -1,28 +1,33 @@
-<article class="article">
-  <header class="article-header">
-    <h1>{{ .Title }}</h1>
-    {{ if eq .Section "post" }}
-      <p class="article-meta">
-        <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "January 2, 2006" }}</time>
-        {{ with .ReadingTime }} · {{ . }} min read{{ end }}
+{{ $showToc := and (eq .Section "post") (in .TableOfContents "<li>") }}
+<div class="article-layout{{ if $showToc }} has-toc{{ end }}">
+  {{ if $showToc }}
+    <aside class="article-toc" aria-label="Table of contents">
+      <details open>
+        <summary>Table of contents</summary>
+        {{ .TableOfContents }}
+      </details>
+    </aside>
+  {{ end }}
+
+  <article class="article">
+    <header class="article-header">
+      <h1>{{ .Title }}</h1>
+      {{ if eq .Section "post" }}
+        <p class="article-meta">
+          <time datetime="{{ .Date.Format "2006-01-02" }}">{{ .Date.Format "January 2, 2006" }}</time>
+          {{ with .ReadingTime }} · {{ . }} min read{{ end }}
+        </p>
+      {{ end }}
+    </header>
+
+    <div class="article-content">
+      {{ .Content }}
+    </div>
+
+    {{ with .GetTerms "tags" }}
+      <p class="article-tags">Tagged:
+        {{ range $index, $tag := . }}{{ if $index }}, {{ end }}<a href="{{ $tag.RelPermalink }}">{{ $tag.LinkTitle }}</a>{{ end }}
       </p>
     {{ end }}
-  </header>
-
-  {{ if and (eq .Section "post") (gt .WordCount 700) }}
-    <details class="table-of-contents">
-      <summary>Table of contents</summary>
-      {{ .TableOfContents }}
-    </details>
-  {{ end }}
-
-  <div class="article-content">
-    {{ .Content }}
-  </div>
-
-  {{ with .GetTerms "tags" }}
-    <p class="article-tags">Tagged:
-      {{ range $index, $tag := . }}{{ if $index }}, {{ end }}<a href="{{ $tag.RelPermalink }}">{{ $tag.LinkTitle }}</a>{{ end }}
-    </p>
-  {{ end }}
-</article>
+  </article>
+</div>
