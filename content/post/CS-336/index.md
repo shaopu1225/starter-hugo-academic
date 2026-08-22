@@ -317,7 +317,7 @@ GPTJ ,PaLM, GPT-NeoX等模型提出了将原本序列化运算的transformer结�
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-03-150032.png" alt="image-20260703230032401" style="zoom:50%;" />
 
-即在向量上乘上一个旋转矩阵，同样地对于多偶数维向量，可以将其两两分组(注意这里的$\theta$对每个d的值是不同的)，我们接下来会证明为什么这个形式是可以表达相对位置信息的；
+即在向量上乘上一个**旋转矩阵**，同样地对于多偶数维向量，可以将其两两分组(注意这里的$\theta$对每个d的值是不同的)，我们接下来会证明为什么这个形式是可以表达相对位置信息的；
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-03-150123.jpg" alt="Image" style="zoom:50%;" />
 
@@ -583,27 +583,59 @@ $$loss=\alpha N \sum_{i=1}^N f_i P_i$$
 
 所以思考，能否存在一种**折中**方案？即沿用先前空间换时间的优化思路，但是不要那么激进？
 
-一个常用的改变计算强度的优化方法就是利用**矩阵结合律**，和`linear attention`类似：
+**一个常用的改变计算强度的优化方法就是利用矩阵结合律**，和`linear attention`类似：
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-10-150510.png" alt="image-20260710230509865" style="zoom:50%;" />
 
-这种方法也被叫做**矩阵吸收**。经过改造后，原有的KV cache也被替代为：缓存前置的prefill的$N\times d$输入，即$X$. 
+这种方法也被叫做**矩阵吸收**。经过改造后，原有的KV cache也被替代为：缓存前置的Prefill的$(N\times d)$输入，即$X^T$，$d$为hidden dimension.
 
-但定量分析后会发现，减少的KV cache比例远低于增加的计算量。所以需要一些技巧来进一步压缩存储：即**降维X**：
+这种方法的副作用是会带来计算量的增加，定量分析后会发现，减少的KV cache比例远低于增加的计算量。所以需要一些技巧来进一步压缩存储：即**降维X**：
+
+注意到，我们可以把原来的 Key-Value 投影矩阵做低秩分解：
+
+$$W_k' = W_{DKV}W_{UK}$$
+
+$$W'_v=W_{DKV}W_{UV}$$
+
+其中：
+
+- \(W_{DKV}\)：把输入压缩到较低维的潜向量，便于放入 cache；维度为$(d\times d_c)$
+- \(W_{UK}\)：再从潜向量恢复出 Key；维度为$(d_c\times d_h)$
+- \(W_k'\)：两步合起来等价得到的完整 Key 投影矩阵；维度为$(d\times d_h)$
+
+因此图中的**注意力分数**为$x^\top W_q W_{UK}^\top W_{DKV}^\top X$；再利用矩阵吸收的想法，便得到了压缩后的缓存表示$X^TW_{DKV}$，也就是论文中的$C$，维度为$(N\times d_c)$。
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-10-164505.jpg" alt="img" style="zoom:50%;" />
 
-这样节省的KV cache比例进一步增大，可以平衡带来的计算开销。$X^TW_{DKV}$就是论文中的$C$，也即需要缓存的压缩表示。
+> 上图中有个小笔误，即左侧$q''$应为$x^TW_qW^T_{UK}$.
 
-矩阵吸收的另一个潜在好处是，假使前提是要缓存$C$，矩阵吸收增加的计算复杂度（相比缓存正常的KV cache）相比于计算$W_k^{'}$和$W_v^{'}$来恢复原本的$K$ $V$矩阵增加的计算复杂度更低。
+这样节省的KV cache比例进一步增大，可以平衡带来的计算开销。
 
-- 为什么training和prefill阶段不需要做矩阵吸收？
+除了在显存制约和计算强度之间取得更好均衡外，矩阵吸收的另一个潜在好处是，假使已知前提是要缓存$C$，矩阵吸收增加的计算复杂度相比于计算$W_k^{'}$和$W_v^{'}$来恢复原本的$K$ $V$矩阵增加的计算复杂度更低。
+
+如果只为了降低显存占用而降维$X$，不做矩阵吸收，那每次恢复完整的$KV$矩阵都需要用缓存的$C$重新做一遍$W^T_{UK}(C)$以及$(C)W_{UV}$，该过程每次所有的历史token都要参与计算，这是$O(Nd_hd_c)$的计算复杂度。通过矩阵吸收，变换后的$q$可以直接和$C$计算，原本$qK^T$的注意力分数计算复杂度为$O(Nd_h)$，现在为$O(Nd_c)$，所以把多出来的计算复杂度降低到了$O(N(d_c-d_h))$，这相比恢复$KV$矩阵要划算的多。
+
+> 虽然每次变换$q$也会多出来$O(d_h(d+d_c))$的计算复杂度，但是因为是在单token上操作的，所以相比较，计算KV的部分才是大头.
+
+- **为什么training和prefill阶段不需要做矩阵吸收？**
 
 <img src="https://shaopu-blog.oss-cn-beijing.aliyuncs.com/img/2026-07-10-172340.png" alt="image-20260711012340264" style="zoom:50%;" />
 
-- ROPE是如何与MLA共存的？
+在前边的分析中，我们也看到了，矩阵吸收仅能降低带来的多余的计算复杂度而无法完全避免，在训练和Prefill场景中，多出的计算复杂度变成了平方级，即$O(N^2(d_c-d_h))$，这就不太划算了。
+
+- **ROPE是如何与MLA共存的？**
 
 首先明确，为什么ROPE不能直接应用在MLA上？因为ROPE矩阵是一个和位置相关的矩阵，不是固定的，导致每次新的token都要重新计算，从而降低推理效率。
+
+加入标准 RoPE 后，RoPE 会根据 token 的位置使用不同的旋转矩阵：
+
+$$\tilde q_i=R_iq_i,\qquad \tilde k_j=R_jW^{UK}c_j^{KV}$$
+
+注意力分数变为：
+
+$$\tilde q_i^\top\tilde k_j =q_i^\top R_i^\top R_jW^{UK}c_j^{KV}$$
+
+这破坏了矩阵吸收的基本形式，每次在计算位置$i$的注意力分数时，还需要使用位置$j$的旋转矩阵。
 
 解决方法：
 
